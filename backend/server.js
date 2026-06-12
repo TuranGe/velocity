@@ -22,6 +22,7 @@ app.use(express.json());
 // ─── Helpers ────────────────────────────────────────────────
 
 function signToken(user) {
+  console.log(user)
   return jwt.sign({ id: user.id, username: user.username }, SECRET, { expiresIn: '30d' });
 }
 
@@ -354,7 +355,27 @@ app.get('/api/sessions/me', auth, (req, res) => {
     daily.push({ day: 6 - i, sessions: row.sessions, total_seconds: row.total_seconds });
   }
 
-  res.json({ sessions, stats, daily });
+  // Current streak — consecutive days (including today) with at least one session
+  let currentStreak = 0;
+  for (let i = 0; ; i++) {
+    const dayStart = now - (i + 1) * 86400;
+    const dayEnd   = now - i * 86400;
+    const row = query(
+      `SELECT COUNT(*) as c FROM sessions WHERE user_id=? AND completed_at >= ? AND completed_at < ?`,
+      [req.user.id, dayStart, dayEnd]
+    )[0];
+    if (row.c > 0) {
+      currentStreak++;
+    } else if (i === 0) {
+      // No session today yet — don't break the streak, just don't count today
+      continue;
+    } else {
+      break;
+    }
+    if (currentStreak > 365) break; // safety cap
+  }
+
+  res.json({ sessions, stats, daily, currentStreak });
 });
 
 // ─── Tasks ───────────────────────────────────────────────────

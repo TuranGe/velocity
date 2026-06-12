@@ -2,6 +2,13 @@
   import Modal from './Modal.svelte';
   import { audio } from '$lib/stores/audio';
   import { t } from '$lib/stores/i18n';
+  import {
+    notificationsEnabled,
+    isNotificationSupported,
+    getPermission,
+    requestNotificationPermission,
+    setNotificationsEnabled,
+  } from '$lib/utils/notifications';
 
   export let show = false;
   export let musicPlaying = false;
@@ -15,6 +22,20 @@
     { id: 'nature', label: '🌿 Nature Rain' },
     { id: 'deepwork', label: '🧠 Deep Work' },
   ];
+
+  let notifSupported = isNotificationSupported();
+  let notifPermission = notifSupported ? getPermission() : 'unsupported';
+
+  async function handleNotifToggle() {
+    if (!notifSupported) return;
+    if (notifPermission === 'granted') {
+      // Can't programmatically revoke; just toggle our own preference
+      setNotificationsEnabled(!$notificationsEnabled);
+    } else {
+      const result = await requestNotificationPermission();
+      notifPermission = result;
+    }
+  }
 
   function handleVolumeChange(e) {
     const val = parseFloat(e.target.value);
@@ -79,6 +100,30 @@
         {/if}
       </button>
     </div>
+  </div>
+
+  <div class="settings-section">
+    <label class="setting-label">🔔 Bildirimler</label>
+    {#if !notifSupported}
+      <p class="setting-hint">Tarayıcın bildirimleri desteklemiyor.</p>
+    {:else if notifPermission === 'denied'}
+      <p class="setting-hint">Bildirimler engellendi. Tarayıcı ayarlarından izin vermen gerekiyor.</p>
+    {:else}
+      <button
+        class="music-btn"
+        class:playing={notifPermission === 'granted' && $notificationsEnabled}
+        on:click={handleNotifToggle}
+      >
+        {#if notifPermission === 'granted' && $notificationsEnabled}
+          <span class="music-icon">🔔</span>
+          Bildirimler Açık
+        {:else}
+          <span class="music-icon">🔕</span>
+          Bildirimleri Aç
+        {/if}
+      </button>
+      <p class="setting-hint">Sekme arka plandayken timer bittiğinde ve görev tamamlandığında bildirim alırsın.</p>
+    {/if}
   </div>
 
   <div class="modal-actions">

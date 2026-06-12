@@ -9,6 +9,7 @@
   import { auth } from '$lib/stores/api';
   import { audio } from '$lib/stores/audio';
   import { toast } from '$lib/stores/toast';
+  import { timer } from '$lib/stores/timer';
   import Modal from './Modal.svelte';
   import { fly, fade } from 'svelte/transition';
 
@@ -263,6 +264,17 @@
     if (musicPlaying) {
       stopMusic();
       setTimeout(() => createAmbientMusic(trackId), 1700);
+    }
+  }
+
+  // Auto-switch music track based on timer mode
+  let lastTimerMode = '';
+  const MODE_TRACKS = { 'focus': 'lofi', 'short-break': 'nature', 'long-break': 'nature', 'custom': 'lofi' };
+  $: if ($timer.mode !== lastTimerMode) {
+    lastTimerMode = $timer.mode;
+    const targetTrack = MODE_TRACKS[$timer.mode] || 'lofi';
+    if (musicPlaying && currentTrack !== targetTrack) {
+      handleTrackChange(targetTrack);
     }
   }
 

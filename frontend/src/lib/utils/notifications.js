@@ -1,0 +1,88 @@
+import { browser } from '$app/environment';
+import { writable } from 'svelte/store';
+
+const STORAGE_KEY = 'velocity-notifications-enabled';
+
+function loadPref() {
+  if (!browser) return false;
+  return localStorage.getItem(STORAGE_KEY) === 'true';
+}
+
+export const notificationsEnabled = writable(loadPref());
+
+export function isNotificationSupported() {
+  return browser && 'Notification' in window;
+}
+
+export function getPermission() {
+  if (!isNotificationSupported()) return 'unsupported';
+  return Notification.permission; // 'default' | 'granted' | 'denied'
+}
+
+export async function requestNotificationPermission() {
+  if (!isNotificationSupported()) return 'unsupported';
+  if (Notification.permission === 'granted') {
+    notificationsEnabled.set(true);
+    if (browser) localStorage.setItem(STORAGE_KEY, 'true');
+    return 'granted';
+  }
+  const result = await Notification.requestPermission();
+  const enabled = result === 'granted';
+  notificationsEnabled.set(enabled);
+  if (browser) localStorage.setItem(STORAGE_KEY, String(enabled));
+  return result;
+}
+
+export function setNotificationsEnabled(enabled) {
+  notificationsEnabled.set(enabled);
+  if (browser) localStorage.setItem(STORAGE_KEY, String(enabled));
+}
+
+const MODE_MESSAGES = {
+  'focus':       { title: '🎯 Focus tamamlandı!', body: 'Harika iş! Şimdi kısa bir ara ver.' },
+  'short-break': { title: '☕ Mola bitti', body: 'Yenilendin mi? Focus oturumuna geri dön.' },
+  'long-break':  { title: '🌿 Uzun mola bitti', body: 'Hazır olduğunda yeni bir focus başlat.' },
+  'custom':      { title: '⏱ Süre tamamlandı!', body: 'Oturumun tamamlandı.' },
+};
+
+// Show a notification when a timer session completes.
+// Only fires if permission granted AND the tab is hidden (background)
+// — when tab is visible, the in-app animation is enough.
+export function notifyTimerComplete(mode) {
+  if (!isNotificationSupported()) return;
+  if (Notification.permission !== 'granted') return;
+  if (document.visibilityState === 'visible') return;
+
+  const msg = MODE_MESSAGES[mode] || MODE_MESSAGES['custom'];
+  try {
+    const n = new Notification(msg.title, {
+      body: msg.body,
+      icon: '/favicon.png',
+      badge: '/favicon.png',
+      tag: 'velocity-timer',
+      requireInteraction: false,
+    });
+    n.onclick = () => {
+      window.focus();
+      n.close();
+    };
+    setTimeout(() => n.close(), 8000);
+  } catch {}
+}
+
+// Notify when a task is auto-completed during a session
+export function notifyTaskComplete(taskText) {
+  if (!isNotificationSupported()) return;
+  if (Notification.permission !== 'granted') return;
+  if (document.visibilityState === 'visible') return;
+
+  try {
+    const n = new Notification('✅ Görev tamamlandı!', {
+      body: taskText,
+      icon: '/favicon.png',
+      tag: 'velocity-task',
+    });
+    n.onclick = () => { window.focus(); n.close(); };
+    setTimeout(() => n.close(), 6000);
+  } catch {}
+}
