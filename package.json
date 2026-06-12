@@ -1,0 +1,16 @@
+{
+  "name": "velocity",
+  "version": "1.0.0",
+  "description": "Velocity Timer — monorepo (backend + frontend + discord-bot)",
+  "private": true,
+  "type": "module",
+  "scripts": {
+    "dev": "concurrently --names \"API,APP,BOT\" --prefix-colors \"yellow,cyan,magenta\" \"npm run dev --prefix backend\" \"npm run dev --prefix frontend\" \"npm run dev --prefix discord-bot\"",
+    "start": "concurrently --names \"API,APP,BOT\" --prefix-colors \"yellow,cyan,magenta\" \"npm run start --prefix backend\" \"npm run preview --prefix frontend\" \"npm run start --prefix discord-bot\"",
+    "install:all": "npm install && npm install --prefix backend && npm install --prefix frontend && npm install --prefix discord-bot",
+    "build": "npm run build --prefix frontend"
+  },
+  "devDependencies": {
+    "concurrently": "^8.2.2"
+  }
+}

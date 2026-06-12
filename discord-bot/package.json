@@ -1,0 +1,17 @@
+{
+  "name": "velocity-discord-bot",
+  "version": "1.0.0",
+  "description": "Discord bot for Velocity — tracks user presence for profile activity cards",
+  "main": "bot.js",
+  "type": "module",
+  "scripts": {
+    "start": "node bot.js",
+    "dev": "node --watch bot.js"
+  },
+  "dependencies": {
+    "discord.js": "^14.14.1",
+    "dotenv": "^16.4.5",
+    "express": "^4.18.2",
+    "cors": "^2.8.5"
+  }
+}

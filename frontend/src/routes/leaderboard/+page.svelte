@@ -1,0 +1,219 @@
+<script>
+  import { onMount } from 'svelte';
+  import { fetchLeaderboard } from '$lib/stores/api';
+  import { auth } from '$lib/stores/api';
+  import { t } from '$lib/stores/i18n';
+  import UserAvatar from '$lib/components/UserAvatar.svelte';
+  import { initGSAP } from '$lib/utils/gsap';
+  import { fly, fade } from 'svelte/transition';
+
+  let rows = [];
+  let contextRows = [];
+  let loading = false;
+  let period = 'week';
+  let search = '';
+  let searchTimer;
+  let gsap;
+
+  const PERIODS = [
+    { id: 'week',    label: 'period_week' },
+    { id: 'month',   label: 'period_month' },
+    { id: 'alltime', label: 'period_all' },
+  ];
+
+  const RANK_ICONS = { 1:'🥇', 2:'🥈', 3:'🥉' };
+
+  onMount(async () => {
+    ({ gsap } = await initGSAP());
+    await load();
+  });
+
+  async function load() {
+    loading = true;
+    try {
+      const data = await fetchLeaderboard({ period, limit: 15, search });
+      rows = data.leaderboard;
+      contextRows = data.context || [];
+    } catch(e) { rows = []; contextRows = []; }
+    finally { loading = false; }
+  }
+
+  function onSearchInput() {
+    clearTimeout(searchTimer);
+    searchTimer = setTimeout(load, 350);
+  }
+
+  $: { period; search; }  // reactivity trigger handled by explicit calls
+
+  $: user = $auth.user;
+  $: myRank = rows.findIndex(r => r.id === user?.id);
+</script>
+
+<svelte:head><title>Leaderboard — Velocity</title></svelte:head>
+
+<div class="page">
+  <div class="page-header">
+    <div>
+      <span class="page-label font-mono">{$t('community')}</span>
+      <h1 class="page-title">{$t('leaderboard_title')}</h1>
+      <p class="page-sub">{$t('leaderboard_sub')}</p>
+    </div>
+  </div>
+
+  <!-- Controls -->
+  <div class="controls">
+    <div class="period-tabs">
+      {#each PERIODS as p}
+        <button class="period-tab font-mono" class:active={period===p.id}
+          on:click={() => { period=p.id; load(); }}>{$t(p.label)}</button>
+      {/each}
+    </div>
+
+    <div class="search-wrap">
+      <svg class="search-icon" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="11" cy="11" r="8"/><line x1="21" y1="21" x2="16.65" y2="16.65"/></svg>
+      <input class="search-input" bind:value={search} on:input={onSearchInput} placeholder={$t('search_users_placeholder')} />
+      {#if search}
+        <button class="search-clear" on:click={() => { search=''; load(); }}>✕</button>
+      {/if}
+    </div>
+  </div>
+
+  <!-- Leaderboard table -->
+  <div class="lb-card">
+    <div class="lb-header font-mono">
+      <span>{$t('col_rank')}</span>
+      <span>{$t('col_user')}</span>
+      <span class="text-right">{$t('col_sessions')}</span>
+      <span class="text-right">{$t('col_hours')}</span>
+    </div>
+
+    {#if loading}
+      {#each Array(8) as _}
+        <div class="lb-skeleton"></div>
+      {/each}
+    {:else if search && contextRows.length > 0}
+      <!-- Contextual view when searching -->
+      {#each contextRows as row (row.id)}
+        <div class="lb-row"
+          class:is-you={row.id === user?.id}
+          class:is-match={row.isMatch}
+          class:gold={row.rank===1} class:silver={row.rank===2} class:bronze={row.rank===3}
+          in:fly={{ x: -16, duration: 250 }}>
+          <span class="lb-rank font-mono">
+            {RANK_ICONS[row.rank] || row.rank}
+          </span>
+          <div class="lb-user">
+            <UserAvatar user={row} size={30} radius="8px" />
+            <a class="lb-name" href={row.id === user?.id ? "/profile" : `/profile/${row.username}`}>{row.username}</a>
+            {#if row.id === user?.id}<span class="you-tag font-mono">{$t('you_label')}</span>{/if}
+            {#if row.isMatch}<span class="match-tag font-mono">match</span>{/if}
+          </div>
+          <span class="lb-val font-mono text-right">{row.sessions}</span>
+          <span class="lb-val font-mono text-right">{(row.total_seconds/3600).toFixed(1)}h</span>
+        </div>
+      {/each}
+    {:else if rows.length === 0}
+      <div class="lb-empty">
+        {search ? `${$t('no_users_found')} for "${search}"` : 'No data yet'}
+      </div>
+    {:else}
+      {#each rows as row, i (row.id)}
+        <div class="lb-row"
+          class:is-you={row.id === user?.id}
+          class:gold={row.rank===1} class:silver={row.rank===2} class:bronze={row.rank===3}
+          in:fly={{ x: -16, duration: 250, delay: i*30 }}>
+          <span class="lb-rank font-mono">
+            {RANK_ICONS[row.rank] || row.rank}
+          </span>
+          <div class="lb-user">
+            <UserAvatar user={row} size={30} radius="8px" />
+            <a class="lb-name" href={row.id === user?.id ? "/profile" : `/profile/${row.username}`}>{row.username}</a>
+            {#if row.id === user?.id}<span class="you-tag font-mono">{$t('you_label')}</span>{/if}
+          </div>
+          <span class="lb-val font-mono text-right">{row.sessions}</span>
+          <span class="lb-val font-mono text-right">{(row.total_seconds/3600).toFixed(1)}h</span>
+        </div>
+      {/each}
+
+      <!-- Current user if not in top 15 -->
+      {#if user && myRank === -1}
+        <div class="lb-row is-you you-footer">
+          <span class="lb-rank font-mono">–</span>
+          <div class="lb-user">
+            <UserAvatar user={user} size={30} radius="8px" />
+            <a class="lb-name" href="/profile">{user.username}</a>
+            <span class="you-tag font-mono">{$t('you_label')}</span>
+          </div>
+          <span class="lb-val font-mono text-right">0</span>
+          <span class="lb-val font-mono text-right">0.0h</span>
+        </div>
+      {/if}
+    {/if}
+  </div>
+
+  {#if !user}
+    <div class="cta-bar">
+      <p>Join the leaderboard — <a href="/">log in</a> and start focusing!</p>
+    </div>
+  {/if}
+</div>
+
+<style>
+  .page { max-width: 720px; margin: 0 auto; padding: 3rem 2rem; display: flex; flex-direction: column; gap: 2rem; }
+
+  .page-label { font-size: 0.65rem; font-weight: 700; letter-spacing: 0.2em; color: var(--accent); display: block; margin-bottom: 0.35rem; }
+  .page-title { font-size: 2rem; font-weight: 800; letter-spacing: -0.03em; color: var(--text-primary); }
+  .page-sub { font-size: 0.85rem; color: var(--text-secondary); margin-top: 0.35rem; }
+
+  .controls { display: flex; align-items: center; justify-content: space-between; flex-wrap: wrap; gap: 0.75rem; }
+
+  .period-tabs { display: flex; background: var(--bg-surface); border: 1px solid var(--border-subtle); border-radius: var(--radius-md); overflow: hidden; }
+  .period-tab { font-size: 0.65rem; font-weight: 700; letter-spacing: 0.08em; text-transform: uppercase; padding: 0.4rem 0.9rem; border: none; background: transparent; color: var(--text-tertiary); transition: all var(--transition-fast); cursor: pointer; }
+  .period-tab.active { background: var(--accent); color: white; }
+  .period-tab:hover:not(.active) { color: var(--text-secondary); }
+
+  .search-wrap { position: relative; }
+  .search-icon { position: absolute; left: 0.75rem; top: 50%; transform: translateY(-50%); color: var(--text-tertiary); pointer-events: none; }
+  .search-input { padding: 0.5rem 2rem 0.5rem 2.25rem; background: var(--bg-surface); border: 1px solid var(--border-base); border-radius: var(--radius-md); font-size: 0.82rem; color: var(--text-primary); outline: none; min-width: 220px; transition: border-color var(--transition-fast); }
+  .search-input:focus { border-color: var(--accent); }
+  .search-clear { position: absolute; right: 0.6rem; top: 50%; transform: translateY(-50%); background: none; border: none; color: var(--text-tertiary); font-size: 0.7rem; cursor: pointer; }
+  .search-clear:hover { color: var(--text-primary); }
+
+  .lb-card { background: var(--bg-surface); border: 1px solid var(--border-subtle); border-radius: var(--radius-xl); overflow: hidden; }
+
+  .lb-header { display: grid; grid-template-columns: 48px 1fr 80px 80px; padding: 0.65rem 1.25rem; font-size: 0.6rem; letter-spacing: 0.15em; text-transform: uppercase; color: var(--text-tertiary); border-bottom: 1px solid var(--border-subtle); }
+
+  .lb-row { display: grid; grid-template-columns: 48px 1fr 80px 80px; align-items: center; padding: 0.85rem 1.25rem; border-bottom: 1px solid var(--border-subtle); transition: background var(--transition-fast); }
+  .lb-row:last-child { border-bottom: none; }
+  .lb-row:hover { background: var(--accent-subtle); }
+  .lb-row.gold { background: rgba(251,191,36,0.06); }
+  .lb-row.is-you { background: var(--accent-subtle); }
+  .lb-row.is-match { background: color-mix(in srgb, var(--accent) 12%, var(--bg-surface)); outline: 1px solid var(--accent); }
+  .lb-row.you-footer { border-top: 1px dashed var(--accent); }
+
+  .lb-rank { font-size: 0.9rem; color: var(--text-tertiary); }
+  .lb-user { display: flex; align-items: center; gap: 0.5rem; overflow: hidden; }
+  .lb-avatar { font-size: 1.1rem; flex-shrink: 0; }
+  .lb-name { font-size: 0.82rem; font-weight: 600; color: var(--text-primary); overflow: hidden; text-overflow: ellipsis; white-space: nowrap; text-decoration: none; }
+  .lb-name:hover { color: var(--accent); }
+  .lb-val { font-size: 0.78rem; color: var(--text-secondary); }
+  .text-right { text-align: right; }
+
+  .you-tag { font-size: 0.5rem; padding: 1px 5px; border-radius: 4px; color: var(--accent); border: 1px solid var(--accent); background: var(--accent-subtle); letter-spacing: 0.1em; text-transform: uppercase; flex-shrink: 0; }
+  .match-tag { font-size: 0.5rem; padding: 1px 5px; border-radius: 4px; color: #22c55e; border: 1px solid #22c55e; letter-spacing: 0.1em; text-transform: uppercase; flex-shrink: 0; }
+
+  .lb-skeleton { height: 56px; border-bottom: 1px solid var(--border-subtle); background: linear-gradient(90deg, var(--bg-surface) 25%, var(--bg-elevated) 50%, var(--bg-surface) 75%); background-size: 200% 100%; animation: shimmer 1.5s infinite; }
+  @keyframes shimmer { 0%{background-position:200% 0} 100%{background-position:-200% 0} }
+
+  .lb-empty { padding: 3rem; text-align: center; color: var(--text-tertiary); font-size: 0.85rem; }
+
+  .cta-bar { text-align: center; padding: 1.25rem; background: var(--accent-subtle); border: 1px solid var(--accent); border-radius: var(--radius-md); font-size: 0.85rem; color: var(--text-secondary); }
+  .cta-bar a { color: var(--accent); font-weight: 600; }
+
+  @media (max-width: 520px) {
+    .page { padding: 2rem 1rem; }
+    .controls { flex-direction: column; align-items: stretch; }
+    .search-input { width: 100%; min-width: unset; }
+    .lb-header, .lb-row { grid-template-columns: 40px 1fr 60px 60px; padding: 0.75rem 1rem; }
+  }
+</style>

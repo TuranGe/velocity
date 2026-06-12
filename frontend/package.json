@@ -1,0 +1,22 @@
+{
+  "name": "velocity-timer",
+  "version": "1.0.0",
+  "description": "A minimal, animated Pomodoro focus timer for developers",
+  "private": true,
+  "scripts": {
+    "dev":     "vite dev --host",
+    "build":   "vite build",
+    "preview": "vite preview --host"
+  },
+  "devDependencies": {
+    "@sveltejs/adapter-auto": "^3.3.1",
+    "@sveltejs/kit": "^2.63.0",
+    "@sveltejs/vite-plugin-svelte": "^3.1.2",
+    "svelte": "^4.2.20",
+    "vite": "^5.0.3"
+  },
+  "dependencies": {
+    "gsap": "^3.12.5"
+  },
+  "type": "module"
+}
