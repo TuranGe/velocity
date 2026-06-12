@@ -97,7 +97,7 @@ function createTasksStore() {
           const spentMinutes = prev + elapsedMinutes;
           const target = safeDuration(t);
           const done = spentMinutes >= target;
-          return { ...t, spentMinutes, done, selected: done ? false : t.selected };
+          return { ...t, spentMinutes, done, selected: done ? false : t.selected, doneAt: done ? Date.now() : t.doneAt };
         });
         persist(next); return next;
       });
@@ -124,7 +124,7 @@ function createTasksStore() {
 
     markDone(id) {
       update(tasks => {
-        const next = tasks.map(t => t.id === id ? { ...t, done: true, selected: false } : t);
+        const next = tasks.map(t => t.id === id ? { ...t, done: true, selected: false, doneAt: Date.now() } : t);
         persist(next); return next;
       });
     },

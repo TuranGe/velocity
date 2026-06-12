@@ -476,8 +476,8 @@
   .tc-cat { font-size: 0.6rem; letter-spacing: 0.1em; text-transform: uppercase; color: var(--text-tertiary); white-space: nowrap; }
 
   .tc-members { display: flex; align-items: center; gap: 0.25rem; }
-  .tc-avatar { width: 26px; height: 26px; border-radius: 50%; background: var(--bg-elevated); display: flex; align-items: center; justify-content: center; font-size: 0.8rem; border: 2px solid var(--bg-surface); margin-left: -6px; }
-  .tc-avatar:first-child { margin-left: 0; }
+  .tc-avatar-wrap { display: flex; align-items: center; justify-content: center; border-radius: 50%; border: 2px solid var(--bg-surface); margin-left: -6px; }
+  .tc-avatar-wrap:first-child { margin-left: 0; }
   .tc-more { font-size: 0.6rem; color: var(--text-tertiary); margin-left: 4px; }
   .tc-count { font-size: 0.65rem; color: var(--text-tertiary); margin-left: auto; }
 
@@ -540,7 +540,6 @@
   .member-row.selectable { cursor: pointer; }
   .member-row.selectable:hover { background: var(--accent-subtle); border-color: var(--accent); }
   .member-row.selected { background: var(--accent-subtle); border-color: var(--accent); }
-  .m-avatar { font-size: 1rem; }
   .m-name { flex: 1; font-size: 0.78rem; color: var(--text-primary); }
   .m-role { font-size: 0.55rem; letter-spacing: 0.1em; text-transform: uppercase; }
   .m-actions { display: flex; gap: 0.35rem; }

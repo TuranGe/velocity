@@ -3,7 +3,6 @@
   import { page } from '$app/stores';
   import ThemeToggle from './ThemeToggle.svelte';
   import SoundSettings from './SoundSettings.svelte';
-  import UserAvatar from './UserAvatar.svelte';
   import { magneticHover, initGSAP } from '$lib/utils/gsap';
   import { t, lang, toggleLang } from '$lib/stores/i18n';
   import { auth } from '$lib/stores/api';
@@ -528,7 +527,6 @@
     transition: background var(--transition-fast), box-shadow var(--transition-fast);
   }
   .user-btn:hover { background: var(--accent); color: white; }
-  .user-avatar { font-size: 1rem; }
   .user-name { max-width: 100px; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; font-family: var(--font-mono); font-size: 0.7rem; }
 
   .dropdown {
@@ -576,11 +574,6 @@
   }
   .auth-tab.active { color: var(--accent); border-bottom-color: var(--accent); }
   .auth-tab:hover:not(.active) { color: var(--text-secondary); }
-
-  .avatar-grid { display: grid; grid-template-columns: repeat(8, 1fr); gap: 0.35rem; }
-  .avatar-btn { font-size: 1rem; padding: 0.3rem; border-radius: var(--radius-sm); border: 1.5px solid transparent; background: transparent; transition: all var(--transition-fast); cursor: pointer; }
-  .avatar-btn:hover { background: var(--bg-elevated); }
-  .avatar-btn.selected { border-color: var(--accent); background: var(--accent-subtle); }
 
   .m-input {
     width: 100%; background: var(--bg-elevated); border: 1px solid var(--border-base);

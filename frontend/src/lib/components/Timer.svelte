@@ -28,18 +28,19 @@
   ];
 
   function handleModeChange(mode) {
+    if ($timer.status === 'running') return;
     if (mode === 'custom') {
       showCustomInput = true;
       return;
     }
     showCustomInput = false;
-    if ($timer.status === 'running') timer.pause();
     animateModeChange();
     if (modeEl) glitchText(modeEl, 0.6);
     timer.setMode(mode);
   }
 
   function applyCustomDuration() {
+    if ($timer.status === 'running') return;
     const mins = Math.max(1, Math.min(180, customMinutes));
     timer.setDuration('custom', mins);
     animateModeChange();
@@ -79,11 +80,12 @@
       if (e.target instanceof HTMLInputElement) return;
       if (e.code === 'Space') { e.preventDefault(); handleStartPause(); }
       if (e.key === 'r' || e.key === 'R') timer.reset();
+      if (e.key === '?') { e.preventDefault(); showShortcuts = !showShortcuts; }
+      if ($timer.status === 'running') return;
       if (e.key === 'f' || e.key === 'F') timer.setMode('focus');
       if (e.key === 's' || e.key === 'S') timer.setMode('short-break');
       if (e.key === 'l' || e.key === 'L') timer.setMode('long-break');
       if (e.key === 'c' || e.key === 'C') timer.setMode('custom');
-      if (e.key === '?') { e.preventDefault(); showShortcuts = !showShortcuts; }
     };
     window.addEventListener('keydown', onKey);
     cleanups.push(() => window.removeEventListener('keydown', onKey));
@@ -192,8 +194,9 @@
         aria-selected={$timer.mode === mode.id}
         class="mode-btn"
         class:active={$timer.mode === mode.id}
+        disabled={$timer.status === 'running'}
         on:click={() => handleModeChange(mode.id)}
-        title="Shortcut: {mode.shortcut}"
+        title={$timer.status === 'running' ? 'Modu değiştirmek için önce timer\'ı durdur' : `Shortcut: ${mode.shortcut}`}
       >
         {mode.label}
         <span class="mode-shortcut">{mode.shortcut}</span>
@@ -368,6 +371,13 @@
   }
 
   .mode-btn:hover { color: var(--text-secondary); }
+
+  .mode-btn:disabled {
+    cursor: not-allowed;
+    opacity: 0.45;
+  }
+  .mode-btn:disabled:hover { color: var(--text-tertiary); }
+  .mode-btn.active:disabled { opacity: 0.7; }
 
   .mode-btn.active {
     background: var(--accent);

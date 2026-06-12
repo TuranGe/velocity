@@ -94,8 +94,6 @@ const translations = {
     // Auth
     username_placeholder: 'Pick a username...',
     save: 'Save',
-    login_prompt: 'Set a username to join the leaderboard',
-    avatar_label: 'Pick an avatar',
 
     // Stats
     your_velocity: 'YOUR VELOCITY',
@@ -174,14 +172,25 @@ const translations = {
     profile_listening: 'LISTENING TO SPOTIFY',
     profile_playing: 'PLAYING',
     profile_login_required: 'You must be logged in',
-    profile_avatar_modal_label: 'AVATAR',
-    profile_avatar_modal_title: 'Classic icons or photo',
+    profile_avatar_modal_label: 'PHOTO',
+    profile_avatar_modal_title: 'Update your profile photo',
     profile_photo_too_large: 'Photo too large (max 5MB)',
     profile_invalid_image: 'Please select a valid image file',
     profile_discord_linked: 'Discord account linked! 🎉',
     profile_welcome: 'Welcome',
     profile_pick_photo: 'Pick Photo',
     profile_close: 'Close',
+
+    // Weekly Summary
+    weekly_summary_label: 'WEEKLY RECAP',
+    weekly_summary_title: 'Your week in focus',
+    weekly_summary_sub: "Here's what you got done over the last 7 days. Have a great weekend!",
+    weekly_summary_sessions: 'Sessions',
+    weekly_summary_minutes: 'Minutes',
+    weekly_summary_active_days: 'Active Days',
+    weekly_summary_tasks: 'Tasks Done',
+    weekly_summary_streak: 'day streak',
+    weekly_summary_best_day: 'Best day:',
   },
   tr: {
     timer: 'Zamanlayıcı',
@@ -268,8 +277,6 @@ const translations = {
 
     username_placeholder: 'Kullanıcı adı seç...',
     save: 'Kaydet',
-    login_prompt: 'Sıralamaya katılmak için kullanıcı adı seç',
-    avatar_label: 'Avatar seç',
 
     your_velocity: 'HIZIN',
     focus_stats: 'Odak İstatistikleri',
@@ -346,14 +353,25 @@ const translations = {
     profile_listening: 'SPOTİFY DİNLENİYOR',
     profile_playing: 'OYNANMIYOR',
     profile_login_required: 'Giriş yapmanız gerekiyor',
-    profile_avatar_modal_label: 'AVATAR',
-    profile_avatar_modal_title: 'Klasik ikonlar veya fotoğraf',
+    profile_avatar_modal_label: 'FOTOĞRAF',
+    profile_avatar_modal_title: 'Profil fotoğrafını güncelle',
     profile_photo_too_large: 'Fotoğraf çok büyük (max 5MB)',
     profile_invalid_image: 'Lütfen geçerli bir resim dosyası seçin',
     profile_discord_linked: 'Discord hesabı bağlandı! 🎉',
     profile_welcome: 'Hoş geldin',
     profile_pick_photo: 'Fotoğraf Seç',
     profile_close: 'Kapat',
+
+    // Weekly Summary
+    weekly_summary_label: 'HAFTALIK ÖZET',
+    weekly_summary_title: 'Haftan özetlendi',
+    weekly_summary_sub: 'Son 7 günde neler yaptığına göz at. İyi hafta sonları!',
+    weekly_summary_sessions: 'Seans',
+    weekly_summary_minutes: 'Dakika',
+    weekly_summary_active_days: 'Aktif Gün',
+    weekly_summary_tasks: 'Tamamlanan Görev',
+    weekly_summary_streak: 'gün seri',
+    weekly_summary_best_day: 'En iyi gün:',
   },
 };
 

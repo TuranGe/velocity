@@ -5,6 +5,7 @@
   export let show = false;
   export let username = 'User';
   export let initials = '?';
+  export let profileImage = '';
   export let totalHours = '0.0';
   export let totalSessions = 0;
   export let totalTasks = 0;
@@ -14,8 +15,33 @@
 
   let svgEl;
   let downloading = false;
+  let resolvedProfileImage = '';
 
   $: chartMax = Math.max(...(chartDays.map(d => d.minutes)), 1);
+
+  // Convert remote/profile image URLs to a data URL so the SVG <image>
+  // embeds reliably and canvas export doesn't get tainted by CORS.
+  $: if (profileImage) {
+    if (profileImage.startsWith('data:')) {
+      resolvedProfileImage = profileImage;
+    } else {
+      resolvedProfileImage = '';
+      toDataURL(profileImage).then(d => { resolvedProfileImage = d; }).catch(() => { resolvedProfileImage = ''; });
+    }
+  } else {
+    resolvedProfileImage = '';
+  }
+
+  async function toDataURL(src) {
+    const res = await fetch(src, { mode: 'cors' });
+    const blob = await res.blob();
+    return await new Promise((resolve, reject) => {
+      const reader = new FileReader();
+      reader.onload = () => resolve(reader.result);
+      reader.onerror = reject;
+      reader.readAsDataURL(blob);
+    });
+  }
 
   async function downloadCard() {
     if (!svgEl) return;
@@ -80,13 +106,26 @@
           <stop offset="0%" stop-color="#f97316"/>
           <stop offset="100%" stop-color="#fb923c"/>
         </linearGradient>
+        <clipPath id="avatarClip">
+          <circle cx="48" cy="48" r="22"/>
+        </clipPath>
       </defs>
       <rect width="600" height="320" rx="20" fill="url(#bg)"/>
       <rect x="1" y="1" width="598" height="318" rx="19" fill="none" stroke="#2a2a2a" stroke-width="1"/>
 
       <!-- Header -->
-      <circle cx="48" cy="48" r="22" fill="url(#accentGrad)"/>
-      <text x="48" y="56" font-family="monospace" font-size="20" font-weight="800" fill="#0d0d0d" text-anchor="middle">{initials}</text>
+      {#if resolvedProfileImage}
+        <image
+          href={resolvedProfileImage}
+          x="26" y="26" width="44" height="44"
+          clip-path="url(#avatarClip)"
+          preserveAspectRatio="xMidYMid slice"
+        />
+        <circle cx="48" cy="48" r="22" fill="none" stroke="#f97316" stroke-width="1.5"/>
+      {:else}
+        <circle cx="48" cy="48" r="22" fill="url(#accentGrad)"/>
+        <text x="48" y="56" font-family="monospace" font-size="20" font-weight="800" fill="#0d0d0d" text-anchor="middle">{initials}</text>
+      {/if}
 
       <text x="84" y="44" font-family="system-ui, sans-serif" font-size="22" font-weight="800" fill="#ffffff">{username}</text>
       <text x="84" y="64" font-family="monospace" font-size="11" font-weight="700" letter-spacing="2" fill="#f97316">VELOCITY · WEEKLY RECAP</text>

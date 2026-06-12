@@ -22,7 +22,7 @@ app.use(express.json());
 // ─── Helpers ────────────────────────────────────────────────
 
 function signToken(user) {
-  console.log(user)
+  if (!user?.id) throw new Error('Cannot sign token: user not found');
   return jwt.sign({ id: user.id, username: user.username }, SECRET, { expiresIn: '30d' });
 }
 
@@ -272,6 +272,7 @@ app.patch('/api/auth/me', auth, async (req, res) => {
   }
 
   const user = query('SELECT id,username,email,profile_image,bio,provider,discord_id,created_at FROM users WHERE id=?', [userId])[0];
+  if (!user) return res.status(404).json({ error: 'User not found' });
   res.json({ user, token: signToken(user) });
 });
 
@@ -291,6 +292,7 @@ app.post('/api/auth/link', auth, (req, res) => {
     run('UPDATE users SET discord_id=? WHERE id=?', [did, userId]);
   }
   const user = query('SELECT id,username,email,profile_image,bio,provider,discord_id,created_at FROM users WHERE id=?', [userId])[0];
+  if (!user) return res.status(404).json({ error: 'User not found' });
   res.json({ user, token: signToken(user) });
 });
 
@@ -642,6 +644,20 @@ app.delete('/api/teams/:teamId/members/:userId', auth, teamRole, (req, res) => {
 // ─── Health ──────────────────────────────────────────────────
 
 app.get('/api/health', (_, res) => res.json({ ok: true, version: '2.0', time: new Date().toISOString() }));
+
+// ─── Error handling ─────────────────────────────────────────
+// Catches sync throws & rejected promises from route handlers above
+// (e.g. signToken failing on a stale/invalid token) and always
+// responds with JSON so the frontend never tries to parse an HTML
+// error page.
+app.use((err, req, res, _next) => {
+  console.error('[API error]', err);
+  if (res.headersSent) return;
+  res.status(500).json({ error: 'Internal server error' });
+});
+
+// 404 fallback — keep JSON shape consistent
+app.use((req, res) => res.status(404).json({ error: 'Not found' }));
 
 // ─── Start ───────────────────────────────────────────────────
 

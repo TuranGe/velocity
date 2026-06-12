@@ -193,7 +193,6 @@
 
   .lb-rank { font-size: 0.9rem; color: var(--text-tertiary); }
   .lb-user { display: flex; align-items: center; gap: 0.5rem; overflow: hidden; }
-  .lb-avatar { font-size: 1.1rem; flex-shrink: 0; }
   .lb-name { font-size: 0.82rem; font-weight: 600; color: var(--text-primary); overflow: hidden; text-overflow: ellipsis; white-space: nowrap; text-decoration: none; }
   .lb-name:hover { color: var(--accent); }
   .lb-val { font-size: 0.78rem; color: var(--text-secondary); }

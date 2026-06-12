@@ -37,7 +37,6 @@ function createSchema() {
       username    TEXT UNIQUE NOT NULL,
       email       TEXT UNIQUE,
       password    TEXT,
-      avatar      TEXT DEFAULT '👤',
       profile_image TEXT,
       provider    TEXT DEFAULT 'local',
       provider_id TEXT,
@@ -117,19 +116,21 @@ function createSchema() {
 
 function seedDemoData() {
   const demoUsers = [
-    { id: 'demo-1', username: 'nova_dev',   avatar: '🦊' },
-    { id: 'demo-2', username: 'px_coder',   avatar: '🐺' },
-    { id: 'demo-3', username: 'zoe.makes',  avatar: '🦋' },
-    { id: 'demo-4', username: 'rustacean',  avatar: '🦀' },
-    { id: 'demo-5', username: 'byte_witch', avatar: '🔮' },
-    { id: 'demo-6', username: 'alex_w',     avatar: '🏄' },
-    { id: 'demo-7', username: 'kaito.dev',  avatar: '⛩️' },
-    { id: 'demo-8', username: 'noctua',     avatar: '🦉' },
-    { id: 'demo-9', username: 'v3ctr',      avatar: '🌙' },
+    { id: 'demo-1', username: 'nova_dev' },
+    { id: 'demo-2', username: 'px_coder' },
+    { id: 'demo-3', username: 'zoe.makes' },
+    { id: 'demo-4', username: 'rustacean' },
+    { id: 'demo-5', username: 'byte_witch' },
+    { id: 'demo-6', username: 'alex_w' },
+    { id: 'demo-7', username: 'kaito.dev' },
+    { id: 'demo-8', username: 'noctua' },
+    { id: 'demo-9', username: 'v3ctr' },
   ];
   for (const u of demoUsers) {
-    if (!query('SELECT id FROM users WHERE id = ?', [u.id]).length)
-      db.run('INSERT INTO users (id, username, avatar, provider) VALUES (?, ?, ?, ?)', [u.id, u.username, u.avatar, 'demo']);
+    if (!query('SELECT id FROM users WHERE id = ?', [u.id]).length) {
+      const profileImage = `https://api.dicebear.com/7.x/identicon/png?seed=${encodeURIComponent(u.username)}`;
+      db.run('INSERT INTO users (id, username, profile_image, provider) VALUES (?, ?, ?, ?)', [u.id, u.username, profileImage, 'demo']);
+    }
   }
 
   const sessionCounts = { 'demo-1':142,'demo-2':118,'demo-3':97,'demo-4':84,'demo-5':71,'demo-6':56,'demo-7':49,'demo-8':78,'demo-9':65 };

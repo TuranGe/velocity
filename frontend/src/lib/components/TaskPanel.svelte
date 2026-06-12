@@ -53,6 +53,7 @@
   // ── Auto-complete tasks by elapsed minutes ──────────────────
   // Tracks the last full minute we processed so we add exactly 1 min at a time
   let lastProcessedMinute = 0;
+  let lastTimerStatus = '';
 
   function startAutoComplete() {
     stopAutoComplete();
@@ -89,13 +90,6 @@
     });
   }
 
-  // Watch timer status
-  $: if ($timer.status === 'running') {
-    startAutoComplete();
-  } else {
-    stopAutoComplete();
-  }
-
   async function completeTask(id) {
     const task = $tasks.find(t => t.id === id);
     if (!task || task.done) return;
@@ -107,11 +101,18 @@
     }
   }
 
-  // Watch timer running state → start/stop auto-complete interval
-  $: if ($timer.status === 'running') {
-    startAutoComplete();
-  } else {
-    stopAutoComplete();
+  // Watch timer running state → start/stop auto-complete interval.
+  // Only react to actual status *transitions* — $timer changes every
+  // second while running, but re-running startAutoComplete() each tick
+  // would keep resetting lastProcessedMinute to the current minute,
+  // so checkAutoComplete would never see a new minute pass.
+  $: if ($timer.status !== lastTimerStatus) {
+    lastTimerStatus = $timer.status;
+    if ($timer.status === 'running') {
+      startAutoComplete();
+    } else {
+      stopAutoComplete();
+    }
   }
 
   onMount(async () => {
