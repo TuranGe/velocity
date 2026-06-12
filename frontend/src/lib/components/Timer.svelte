@@ -5,6 +5,10 @@
   import { initGSAP, magneticHover, glitchText } from '$lib/utils/gsap';
   import { recordSession, auth } from '$lib/stores/api';
   import { tasks } from '$lib/stores/tasks';
+  import { notifyTimerComplete } from '$lib/utils/notifications';
+  import ShortcutsOverlay from './ShortcutsOverlay.svelte';
+
+  let showShortcuts = false;
 
   let gsap;
   let timerEl;
@@ -43,12 +47,6 @@
     showCustomInput = false;
   }
 
-  const modes = [
-    { id: 'focus',       label: 'Focus',  shortcut: 'F' },
-    { id: 'short-break', label: 'Short',  shortcut: 'S' },
-    { id: 'long-break',  label: 'Long',   shortcut: 'L' },
-  ];
-
   onMount(async () => {
     ({ gsap } = await initGSAP());
 
@@ -84,6 +82,8 @@
       if (e.key === 'f' || e.key === 'F') timer.setMode('focus');
       if (e.key === 's' || e.key === 'S') timer.setMode('short-break');
       if (e.key === 'l' || e.key === 'L') timer.setMode('long-break');
+      if (e.key === 'c' || e.key === 'C') timer.setMode('custom');
+      if (e.key === '?') { e.preventDefault(); showShortcuts = !showShortcuts; }
     };
     window.addEventListener('keydown', onKey);
     cleanups.push(() => window.removeEventListener('keydown', onKey));
@@ -103,6 +103,8 @@
     }
     // Add elapsed time to all selected tasks — any mode counts
     tasks.addTime(duration);
+    // Browser notification if tab is in background
+    notifyTimerComplete(mode);
   }
 
   $: if (gsap && $timer.status !== lastStatus) {
@@ -136,6 +138,20 @@
       .to('.timer-display', { color: 'var(--accent)', duration: 0.3, ease: 'none' }, 0)
       .to('.completion-flash', { opacity: 0.15, duration: 0.15, yoyo: true, repeat: 3 }, 0);
 
+    // Haptic shake on the timer section
+    gsap.to('.timer-section', {
+      keyframes: [
+        { x: -6, duration: 0.06 },
+        { x: 6,  duration: 0.06 },
+        { x: -5, duration: 0.06 },
+        { x: 5,  duration: 0.06 },
+        { x: -3, duration: 0.05 },
+        { x: 0,  duration: 0.05 },
+      ],
+      ease: 'none',
+      delay: 0.1,
+    });
+
     if (modeEl) glitchText(modeEl, 0.6);
   }
 
@@ -145,6 +161,11 @@
 
     if ($timer.status === 'running') {
       timer.pause();
+    } else if ($timer.status === 'completed') {
+      // Reset first, then start fresh
+      timer.reset();
+      animateModeChange();
+      setTimeout(() => timer.start(), 50);
     } else {
       timer.start();
     }
@@ -294,12 +315,15 @@
     </div>
   </div>
 
-  <p class="keyboard-hint">
+  <button class="keyboard-hint" on:click={() => showShortcuts = true} title="Tüm kısayolları gör">
     <kbd>Space</kbd> start/pause &nbsp;·&nbsp;
     <kbd>R</kbd> reset &nbsp;·&nbsp;
-    <kbd>F</kbd> / <kbd>S</kbd> / <kbd>L</kbd> modes
-  </p>
+    <kbd>F</kbd> / <kbd>S</kbd> / <kbd>L</kbd> modes &nbsp;·&nbsp;
+    <kbd>?</kbd> tüm kısayollar
+  </button>
 </section>
+
+<ShortcutsOverlay bind:show={showShortcuts} />
 
 <style>
   .timer-section {
@@ -425,6 +449,9 @@
     align-items: center;
     justify-content: center;
     will-change: transform;
+    /* Extra padding so scale(1.06) doesn't clip against parent edges */
+    padding: 12px;
+    margin: -12px;
   }
 
   .timer-display {
@@ -492,6 +519,13 @@
   .session-dot.filled {
     background: var(--accent);
     box-shadow: 0 0 6px var(--accent-glow);
+    animation: dot-pop 0.4s var(--spring) both;
+  }
+
+  @keyframes dot-pop {
+    0%   { transform: scale(0); opacity: 0; }
+    60%  { transform: scale(1.5); }
+    100% { transform: scale(1); opacity: 1; }
   }
 
   .timer-actions {
@@ -591,6 +625,16 @@
     font-size: 0.65rem;
     color: var(--text-tertiary);
     letter-spacing: 0.05em;
+    background: none;
+    border: none;
+    cursor: pointer;
+    padding: 0.3rem 0.6rem;
+    border-radius: var(--radius-sm);
+    transition: color var(--transition-fast), background var(--transition-fast);
+  }
+  .keyboard-hint:hover {
+    color: var(--text-secondary);
+    background: var(--bg-elevated);
   }
 
   kbd {

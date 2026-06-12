@@ -2,16 +2,19 @@
   import { onMount } from 'svelte';
   import { fly, fade } from 'svelte/transition';
   import Modal from '$lib/components/Modal.svelte';
+  import ShareCard from '$lib/components/ShareCard.svelte';
   import { auth, fetchMySessions, fetchTeams, API_URL } from '$lib/stores/api';
   import { timer } from '$lib/stores/timer';
   import { tasks } from '$lib/stores/tasks';
   import { toast } from '$lib/stores/toast';
   import { t } from '$lib/stores/i18n';
+  import { weeklyGoal } from '$lib/stores/weeklyGoal';
 
   let user = $auth.user;
   let editing = false;
   let saving = false;
   let showAvatarModal = false;
+  let showShareCard = false;
   let bio = user?.bio || '';
   let profileImageUrl = user?.profile_image || '';
   let usernameEdit = user?.username || '';
@@ -19,6 +22,7 @@
   let recentSessions = [];
   let dailyData = [];
   let teamCount = 0;
+  let currentStreak = 0;
   let fileInput;
   let discordActivity = null;
   let discordLoading = false;
@@ -41,6 +45,7 @@
       remoteStats = sessionsRes.stats;
       recentSessions = (sessionsRes.sessions || []).slice(0, 5);
       dailyData = sessionsRes.daily || [];
+      currentStreak = sessionsRes.currentStreak || 0;
       teamCount = (teamsRes.teams || []).filter((team) => team.members?.some((member) => member.id === user.id)).length;
       if (user.discord_id) loadDiscordActivity(user.discord_id);
     } catch {
@@ -150,6 +155,27 @@
   })();
   $: chartMax = Math.max(...(chartDays.map(d => d.minutes)), 1);
 
+  // Weekly goal tracking
+  $: weeklyMinutes = chartDays.reduce((sum, d) => sum + (d.minutes || 0), 0);
+  $: weeklyGoalPct = Math.min(100, Math.round((weeklyMinutes / $weeklyGoal) * 100));
+  $: weeklyGoalHours = ($weeklyGoal / 60);
+
+  let editingGoal = false;
+  let goalInputHours = ($weeklyGoal / 60);
+
+  function startEditGoal() {
+    goalInputHours = $weeklyGoal / 60;
+    editingGoal = true;
+  }
+  function saveGoal() {
+    const mins = Math.max(15, Math.round(parseFloat(goalInputHours) * 60) || 60);
+    weeklyGoal.setGoal(mins);
+    editingGoal = false;
+  }
+  function cancelEditGoal() {
+    editingGoal = false;
+  }
+
   $: doneTasks  = $tasks.filter(t => t.done).length;
   $: totalTasks = $tasks.length;
   $: taskPct    = totalTasks > 0 ? Math.round((doneTasks / totalTasks) * 100) : 0;
@@ -230,6 +256,12 @@
         {/if}
 
         <div class="hero-pills">
+          {#if currentStreak > 0}
+            <span class="pill pill-streak" class:streak-hot={currentStreak >= 7}>
+              <span class="streak-flame">🔥</span>
+              {currentStreak} {currentStreak === 1 ? 'gün' : 'gün'} üst üste
+            </span>
+          {/if}
           <span class="pill">
             <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><circle cx="12" cy="12" r="10"/><polyline points="12 6 12 12 16 14"/></svg>
             {totalSessions} {$t('profile_sessions')}
@@ -270,6 +302,10 @@
               <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M11 4H4a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2v-7"/><path d="M18.5 2.5a2.121 2.121 0 0 1 3 3L12 15l-4 1 1-4 9.5-9.5z"/></svg>
               {$t('profile_edit')}
             </button>
+            <button class="btn-share" on:click={() => showShareCard = true}>
+              <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="18" cy="5" r="3"/><circle cx="6" cy="12" r="3"/><circle cx="18" cy="19" r="3"/><line x1="8.59" y1="13.51" x2="15.42" y2="17.49"/><line x1="15.41" y1="6.51" x2="8.59" y2="10.49"/></svg>
+              Paylaş
+            </button>
           {/if}
         </div>
       </div>
@@ -297,6 +333,43 @@
           <div class="stat-block">
             <span class="stat-num font-mono">{totalHours}</span>
             <span class="stat-desc">{$t('profile_hours')}</span>
+          </div>
+        </div>
+
+        <!-- Weekly Goal -->
+        <div class="weekly-goal">
+          <div class="wg-header">
+            <span class="wg-label">🎯 Haftalık Hedef</span>
+            {#if editingGoal}
+              <div class="wg-edit">
+                <input
+                  type="number"
+                  class="wg-input font-mono"
+                  bind:value={goalInputHours}
+                  min="0.25"
+                  max="168"
+                  step="0.5"
+                  on:keydown={(e) => e.key === 'Enter' && saveGoal()}
+                />
+                <span class="wg-unit">sa/hafta</span>
+                <button class="wg-btn wg-btn-save" on:click={saveGoal}>✓</button>
+                <button class="wg-btn wg-btn-cancel" on:click={cancelEditGoal}>✕</button>
+              </div>
+            {:else}
+              <button class="wg-edit-btn" on:click={startEditGoal}>
+                {weeklyGoalHours} sa/hafta
+                <svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><path d="M11 4H4a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2v-7"/><path d="M18.5 2.5a2.121 2.121 0 0 1 3 3L12 15l-4 1 1-4 9.5-9.5z"/></svg>
+              </button>
+            {/if}
+          </div>
+          <div class="wg-bar-track">
+            <div class="wg-bar-fill" class:wg-complete={weeklyGoalPct >= 100} style="width: {weeklyGoalPct}%"></div>
+          </div>
+          <div class="wg-footer">
+            <span class="wg-progress font-mono">{Math.floor(weeklyMinutes/60)}sa {weeklyMinutes%60}dk / {weeklyGoalHours}sa</span>
+            <span class="wg-pct font-mono" class:wg-complete-text={weeklyGoalPct >= 100}>
+              {weeklyGoalPct >= 100 ? '🎉 Tamamlandı!' : `${weeklyGoalPct}%`}
+            </span>
           </div>
         </div>
 
@@ -459,6 +532,19 @@
       <button class="btn-ghost" on:click={() => (showAvatarModal = false)}>{$t('profile_close')}</button>
     </div>
   </Modal>
+
+  <!-- ── Share Card Modal ─────────────────────────── -->
+  <ShareCard
+    bind:show={showShareCard}
+    username={user.username}
+    initials={initials}
+    totalHours={totalHours}
+    totalSessions={totalSessions}
+    totalTasks={totalTasks}
+    doneTasks={doneTasks}
+    chartDays={chartDays}
+    currentStreak={currentStreak}
+  />
 {/if}
 
 <style>
@@ -638,6 +724,32 @@
     text-transform: uppercase;
   }
 
+  .pill-streak {
+    background: linear-gradient(135deg, rgba(251,146,60,0.12), rgba(249,115,22,0.06));
+    border-color: rgba(249,115,22,0.35);
+    color: #fb923c;
+  }
+  .pill-streak.streak-hot {
+    background: linear-gradient(135deg, rgba(251,146,60,0.2), rgba(239,68,68,0.08));
+    border-color: rgba(251,146,60,0.5);
+    animation: streak-glow 2s ease-in-out infinite;
+  }
+  .streak-flame {
+    display: inline-block;
+    animation: streak-flicker 1.6s ease-in-out infinite;
+    font-size: 0.85rem;
+  }
+  @keyframes streak-flicker {
+    0%, 100% { transform: scale(1) rotate(0deg); }
+    25%      { transform: scale(1.12) rotate(-4deg); }
+    50%      { transform: scale(0.95) rotate(3deg); }
+    75%      { transform: scale(1.08) rotate(-2deg); }
+  }
+  @keyframes streak-glow {
+    0%, 100% { box-shadow: 0 0 0px rgba(251,146,60,0); }
+    50%      { box-shadow: 0 0 14px rgba(251,146,60,0.35); }
+  }
+
   /* Actions */
   .hero-right {
     position: relative;
@@ -701,6 +813,11 @@
   }
   .btn-edit { background: rgba(255,255,255,0.04); border: 1px solid var(--border-subtle); color: var(--text-primary); }
   .btn-edit:hover { background: rgba(255,255,255,0.08); transform: translateY(-1px); }
+  .btn-share {
+    background: rgba(255,255,255,0.04); border: 1px solid var(--border-subtle); color: var(--text-primary);
+    display: inline-flex; align-items: center; gap: 0.4rem;
+  }
+  .btn-share:hover { background: var(--accent-subtle); border-color: var(--accent); color: var(--accent); transform: translateY(-1px); }
   .btn-cancel { background: transparent; border: 1px solid var(--border-subtle); color: var(--text-secondary); }
   .btn-cancel:hover { border-color: var(--text-secondary); }
   .btn-save { background: linear-gradient(135deg, var(--accent), var(--accent-hover)); border: 1px solid transparent; color: white; box-shadow: 0 4px 20px color-mix(in srgb, var(--accent) 35%, transparent); }
@@ -782,6 +899,108 @@
     width: 100%;
     max-width: 22ch;
   }
+
+  /* ── Weekly Goal ──────────────────────────────────── */
+  .weekly-goal {
+    display: flex;
+    flex-direction: column;
+    gap: 0.5rem;
+    margin: 1.25rem 0;
+    padding: 1rem;
+    background: var(--bg-elevated);
+    border: 1px solid var(--border-subtle);
+    border-radius: var(--radius-md);
+  }
+  .wg-header {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 0.5rem;
+  }
+  .wg-label {
+    font-size: 0.8rem;
+    font-weight: 700;
+    color: var(--text-primary);
+  }
+  .wg-edit-btn {
+    display: inline-flex;
+    align-items: center;
+    gap: 0.35rem;
+    font-family: var(--font-mono);
+    font-size: 0.7rem;
+    font-weight: 700;
+    color: var(--text-tertiary);
+    background: transparent;
+    border: 1px solid var(--border-subtle);
+    border-radius: 999px;
+    padding: 0.2rem 0.6rem;
+    cursor: pointer;
+    transition: color var(--transition-fast), border-color var(--transition-fast);
+  }
+  .wg-edit-btn:hover { color: var(--accent); border-color: var(--accent); }
+  .wg-edit {
+    display: flex;
+    align-items: center;
+    gap: 0.35rem;
+  }
+  .wg-input {
+    width: 56px;
+    background: var(--bg-base);
+    border: 1px solid var(--border-base);
+    border-radius: var(--radius-sm);
+    color: var(--text-primary);
+    font-size: 0.8rem;
+    padding: 0.2rem 0.4rem;
+    text-align: center;
+  }
+  .wg-input:focus { outline: none; border-color: var(--accent); }
+  .wg-unit { font-size: 0.65rem; color: var(--text-tertiary); }
+  .wg-btn {
+    width: 22px; height: 22px;
+    display: flex; align-items: center; justify-content: center;
+    border-radius: 50%;
+    border: none;
+    cursor: pointer;
+    font-size: 0.7rem;
+    font-weight: 700;
+  }
+  .wg-btn-save { background: var(--accent); color: white; }
+  .wg-btn-save:hover { background: var(--accent-hover); }
+  .wg-btn-cancel { background: var(--bg-base); color: var(--text-tertiary); border: 1px solid var(--border-subtle); }
+  .wg-btn-cancel:hover { color: var(--text-primary); }
+
+  .wg-bar-track {
+    height: 8px;
+    border-radius: 999px;
+    background: var(--bg-base);
+    overflow: hidden;
+    border: 1px solid var(--border-subtle);
+  }
+  .wg-bar-fill {
+    height: 100%;
+    border-radius: 999px;
+    background: linear-gradient(90deg, var(--accent), var(--accent-hover));
+    box-shadow: 0 0 8px var(--accent-glow);
+    transition: width 0.6s var(--spring);
+  }
+  .wg-bar-fill.wg-complete {
+    background: linear-gradient(90deg, #34d399, #10b981);
+    box-shadow: 0 0 12px rgba(52,211,153,0.5);
+    animation: wg-pulse 1.6s ease-in-out infinite;
+  }
+  @keyframes wg-pulse {
+    0%, 100% { filter: brightness(1); }
+    50%      { filter: brightness(1.25); }
+  }
+
+  .wg-footer {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+  }
+  .wg-progress { font-size: 0.68rem; color: var(--text-tertiary); }
+  .wg-pct { font-size: 0.7rem; font-weight: 700; color: var(--text-secondary); }
+  .wg-pct.wg-complete-text { color: #34d399; }
 
   /* ── Daily chart ──────────────────────────────────── */
   .daily-chart {
@@ -1032,21 +1251,62 @@
 
   /* Responsive */
   @media (max-width: 860px) {
-    .hero-card { grid-template-columns: auto 1fr; }
+    .hero-card { grid-template-columns: auto 1fr; gap: 1.5rem; }
     .hero-right { grid-column: 1 / -1; flex-direction: row; justify-content: flex-start; flex-wrap: wrap; }
     .grid-2 { grid-template-columns: 1fr; }
   }
 
-  @media (max-width: 540px) {
-    .page { padding: 1.5rem 1rem 4rem; }
-    .hero-card { grid-template-columns: 1fr; gap: 1.25rem; text-align: center; }
+  @media (max-width: 640px) {
+    .page { padding: 1.25rem 1rem 5rem; gap: 1rem; }
+
+    .weekly-goal { padding: 0.75rem; }
+    .wg-label { font-size: 0.75rem; }
+    .wg-footer { flex-direction: column; align-items: flex-start; gap: 0.2rem; }
+
+    /* Hero card stacks vertically */
+    .hero-card { grid-template-columns: 1fr; gap: 1.25rem; text-align: center; padding: 1.5rem 1.25rem; }
     .hero-left { align-items: center; }
     .hero-center { align-items: center; }
     .hero-pills { justify-content: center; }
-    .hero-right { justify-content: center; }
-    .hero-username { font-size: 1.8rem; }
-    .avatar-wrap { width: 100px; height: 100px; }
+    .hero-right { justify-content: center; gap: 0.5rem; }
+    .hero-username { font-size: 1.8rem; white-space: normal; word-break: break-word; }
+    .avatar-wrap { width: 90px; height: 90px; border-radius: 22px; }
+    .avatar-initials { font-size: 2.2rem; }
+    .hero-bio { font-size: 0.82rem; max-width: 100%; }
+    .bio-textarea { max-width: 100%; }
+
+    /* Stats trio */
     .stat-trio { grid-template-columns: 1fr 1fr; }
     .stat-trio .stat-block:last-child { grid-column: 1 / -1; }
+    .stat-num { font-size: 1.4rem; }
+
+    /* Buttons */
+    .edit-row { flex-wrap: wrap; }
+    .btn-edit, .btn-save, .btn-cancel { font-size: 0.68rem; padding: 0.5rem 0.85rem; }
+    .btn-discord { font-size: 0.7rem; }
+
+    /* Daily chart */
+    .daily-chart { gap: 4px; }
+    .chart-label { font-size: 0.52rem; }
+
+    /* Session rows */
+    .session-name { font-size: 0.82rem; }
+    .session-date { font-size: 0.68rem; }
+
+    /* Discord activity */
+    .activity-art { width: 48px; height: 48px; }
+    .activity-title { font-size: 0.85rem; }
+
+    /* Panel */
+    .panel { padding: 1.25rem 1rem; border-radius: 18px; }
+    .panel-title { font-size: 0.95rem; }
+  }
+
+  @media (max-width: 400px) {
+    .hero-card { padding: 1.25rem 1rem; }
+    .stat-trio { grid-template-columns: 1fr; }
+    .stat-trio .stat-block:last-child { grid-column: auto; }
+    .modal-footer { grid-template-columns: 1fr; }
+    .discord-header { flex-direction: column; gap: 0.5rem; }
   }
 </style>

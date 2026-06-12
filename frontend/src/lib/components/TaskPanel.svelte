@@ -1,9 +1,12 @@
 <script>
-  import { onMount } from 'svelte';
+  import { onMount, onDestroy } from 'svelte';
   import { tasks } from '$lib/stores/tasks';
   import { auth, fetchRemoteTasks, createRemoteTask, updateRemoteTask, deleteRemoteTask } from '$lib/stores/api';
   import { t } from '$lib/stores/i18n';
   import { initGSAP } from '$lib/utils/gsap';
+  import { timer } from '$lib/stores/timer';
+  import { frequentTasks } from '$lib/stores/frequentTasks';
+  import { notifyTaskComplete } from '$lib/utils/notifications';
   import { flip } from 'svelte/animate';
   import { fly, fade } from 'svelte/transition';
 
@@ -14,6 +17,102 @@
   let gsap;
   let addBtnEl;
   let loading = false;
+  let autoCompleteInterval = null;
+
+  // ── Confetti ────────────────────────────────────────────────
+  function launchConfetti() {
+    const colors = ['#f97316','#fb923c','#fbbf24','#34d399','#60a5fa','#a78bfa','#f472b6'];
+    const count = 60;
+    const container = document.body;
+    for (let i = 0; i < count; i++) {
+      const el = document.createElement('div');
+      el.style.cssText = `
+        position:fixed;
+        pointer-events:none;
+        z-index:9999;
+        width:${6 + Math.random() * 8}px;
+        height:${6 + Math.random() * 8}px;
+        background:${colors[Math.floor(Math.random() * colors.length)]};
+        border-radius:${Math.random() > 0.5 ? '50%' : '2px'};
+        left:${20 + Math.random() * 60}%;
+        top:60%;
+        opacity:1;
+      `;
+      container.appendChild(el);
+      const tx = (Math.random() - 0.5) * 300;
+      const ty = -(100 + Math.random() * 300);
+      const rot = (Math.random() - 0.5) * 720;
+      el.animate([
+        { transform: 'translate(0,0) rotate(0deg)', opacity: 1 },
+        { transform: `translate(${tx}px,${ty}px) rotate(${rot}deg)`, opacity: 0 }
+      ], { duration: 900 + Math.random() * 600, easing: 'cubic-bezier(0,0.9,0.57,1)', fill: 'forwards' })
+        .onfinish = () => el.remove();
+    }
+  }
+
+  // ── Auto-complete tasks by elapsed minutes ──────────────────
+  // Tracks the last full minute we processed so we add exactly 1 min at a time
+  let lastProcessedMinute = 0;
+
+  function startAutoComplete() {
+    stopAutoComplete();
+    lastProcessedMinute = Math.floor(($timer.elapsed ?? 0) / 60);
+    autoCompleteInterval = setInterval(checkAutoComplete, 1000);
+  }
+
+  function stopAutoComplete() {
+    if (autoCompleteInterval) { clearInterval(autoCompleteInterval); autoCompleteInterval = null; }
+  }
+
+  function checkAutoComplete() {
+    const elapsed = $timer.elapsed;
+    if (!isFinite(elapsed)) return;
+    const currentMinute = Math.floor(elapsed / 60);
+    if (currentMinute <= lastProcessedMinute) return;
+
+    // Add 1 minute at a time for each new minute that passed
+    const minutesToAdd = currentMinute - lastProcessedMinute;
+    lastProcessedMinute = currentMinute;
+
+    // Add incremental time to spent
+    tasks.addIncrementalTime(minutesToAdd);
+
+    // Check each selected task for completion
+    $tasks.forEach(task => {
+      if (!task.selected || task.done) return;
+      const prev = isFinite(task.spentMinutes) ? task.spentMinutes : 0;
+      const spent = prev + minutesToAdd;
+      const target = task.durationMinutes ?? task.pomodoros ?? 25;
+      if (isFinite(target) && spent >= target) {
+        completeTask(task.id);
+      }
+    });
+  }
+
+  // Watch timer status
+  $: if ($timer.status === 'running') {
+    startAutoComplete();
+  } else {
+    stopAutoComplete();
+  }
+
+  async function completeTask(id) {
+    const task = $tasks.find(t => t.id === id);
+    if (!task || task.done) return;
+    tasks.markDone(id);
+    launchConfetti();
+    notifyTaskComplete(task.text);
+    if ($auth.user) {
+      try { await updateRemoteTask(id, { done: true }); } catch {}
+    }
+  }
+
+  // Watch timer running state → start/stop auto-complete interval
+  $: if ($timer.status === 'running') {
+    startAutoComplete();
+  } else {
+    stopAutoComplete();
+  }
 
   onMount(async () => {
     ({ gsap } = await initGSAP());
@@ -60,6 +159,8 @@
     newTaskMinutes = 25;
     gsap?.to(addBtnEl, { scale: 0.88, duration: 0.1, yoyo: true, repeat: 1 });
 
+    frequentTasks.record(text, durationMinutes);
+
     if ($auth.user) {
       try {
         const data = await createRemoteTask(text, durationMinutes);
@@ -88,6 +189,8 @@
   }
 
   function handleToggleSelected(id, el) {
+    // Only allow selection changes when timer is idle or completed
+    if ($timer.status === 'running' || $timer.status === 'paused') return;
     gsap?.to(el, { scale: 0.97, duration: 0.1, yoyo: true, repeat: 1 });
     tasks.toggleSelected(id);
   }
@@ -104,10 +207,54 @@
 
   function onKeydown(e) { if (e.key === 'Enter') handleAdd(); }
 
+  onDestroy(() => stopAutoComplete());
+
   $: doneTasks  = $tasks.filter(t => t.done).length;
   $: totalTasks = $tasks.length;
   $: activeTasks = $tasks.filter(t => t.selected && !t.done).length;
   $: progressPct = totalTasks > 0 ? (doneTasks / totalTasks) * 100 : 0;
+
+  // Sorted: active (selected) → pending → done
+  $: sortedTasks = [...$tasks].sort((a, b) => {
+    const rank = t => t.done ? 2 : t.selected ? 0 : 1;
+    return rank(a) - rank(b);
+  });
+
+  // ── Frequently used task suggestions ────────────────────────
+  // Show top frequent tasks not already present (active) in the list,
+  // filtered by current input text if any.
+  $: quickSuggestions = (() => {
+    const activeNorms = new Set($tasks.filter(t => !t.done).map(t => t.text.trim().toLowerCase()));
+    const filter = newTaskText.trim().toLowerCase();
+    return $frequentTasks
+      .filter(f => f.count >= 2 && !activeNorms.has(f.norm))
+      .filter(f => !filter || f.norm.includes(filter))
+      .sort((a, b) => b.count - a.count)
+      .slice(0, 4);
+  })();
+
+  async function quickAdd(suggestion) {
+    const text = suggestion.text;
+    const durationMinutes = Math.max(1, suggestion.durationMinutes || 25);
+    gsap?.to(addBtnEl, { scale: 0.88, duration: 0.1, yoyo: true, repeat: 1 });
+
+    frequentTasks.record(text, durationMinutes);
+
+    if ($auth.user) {
+      try {
+        const data = await createRemoteTask(text, durationMinutes);
+        tasks.addFromRemote({
+          id: data.task.id, text: data.task.text,
+          done: false, selected: false,
+          durationMinutes: data.task.pomodoros,
+          spentMinutes: 0,
+          createdAt: Date.now(),
+        });
+      } catch { tasks.add(text, durationMinutes); }
+    } else {
+      tasks.add(text, durationMinutes);
+    }
+  }
 </script>
 
 <aside bind:this={panelEl} class="task-panel">
@@ -174,11 +321,26 @@
     </div>
   </div>
 
+  <!-- Frequently used task suggestions -->
+  {#if $auth.user && quickSuggestions.length > 0}
+    <div class="quick-suggestions" transition:fade={{ duration: 150 }}>
+      {#each quickSuggestions as sugg (sugg.norm)}
+        <button class="quick-chip" on:click={() => quickAdd(sugg)} title="Hızlı ekle: {sugg.text} ({sugg.durationMinutes}dk)">
+          <span class="quick-chip-icon">⚡</span>
+          <span class="quick-chip-text">{sugg.text}</span>
+          <span class="quick-chip-dur font-mono">{sugg.durationMinutes}dk</span>
+        </button>
+      {/each}
+    </div>
+  {/if}
+
   <!-- Helper text when tasks exist -->
   {#if $tasks.filter(t => !t.done).length > 0}
     <p class="hint-text">
-      {#if activeTasks > 0}
-        <span class="hint-active">⏱ {activeTasks} görev izleniyor — timer'ı başlat!</span>
+      {#if activeTasks > 0 && $timer.status === 'running'}
+        <span class="hint-active">⏱ {activeTasks} görev izleniyor</span>
+      {:else if activeTasks > 0}
+        <span class="hint-active">✓ {activeTasks} görev seçili — timer'ı başlat!</span>
       {:else}
         Yapmak istediğin görevi seç, sonra timer'ı başlat
       {/if}
@@ -196,16 +358,31 @@
       <ul class="task-list" role="list">
         {#if $tasks.length === 0}
           <li class="empty-state" transition:fade={{ duration: 200 }}>
-            <svg width="32" height="32" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" opacity="0.3">
-              <path d="M9 11l3 3L22 4"/>
-              <path d="M21 12v7a2 2 0 01-2 2H5a2 2 0 01-2-2V5a2 2 0 012-2h11"/>
+            <svg class="empty-illustration" width="120" height="90" viewBox="0 0 120 90" fill="none">
+              <!-- Floating clipboard -->
+              <g class="empty-clipboard">
+                <rect x="35" y="14" width="50" height="62" rx="6" fill="var(--bg-elevated)" stroke="var(--border-base)" stroke-width="1.5"/>
+                <rect x="48" y="8" width="24" height="10" rx="3" fill="var(--border-base)"/>
+                <line x1="44" y1="32" x2="76" y2="32" stroke="var(--border-base)" stroke-width="2" stroke-linecap="round" class="empty-line e1"/>
+                <line x1="44" y1="44" x2="68" y2="44" stroke="var(--border-base)" stroke-width="2" stroke-linecap="round" class="empty-line e2"/>
+                <line x1="44" y1="56" x2="72" y2="56" stroke="var(--border-base)" stroke-width="2" stroke-linecap="round" class="empty-line e3"/>
+              </g>
+              <!-- Floating dots -->
+              <circle class="empty-dot d1" cx="18" cy="20" r="3" fill="var(--accent)" opacity="0.5"/>
+              <circle class="empty-dot d2" cx="104" cy="60" r="2.5" fill="var(--accent)" opacity="0.4"/>
+              <circle class="empty-dot d3" cx="100" cy="18" r="2" fill="var(--accent)" opacity="0.35"/>
+              <!-- Pencil -->
+              <g class="empty-pencil">
+                <path d="M88 50l8-8 6 6-8 8-6-6z" fill="var(--accent)" opacity="0.85"/>
+                <path d="M86 56l-3 6 6-3-3-3z" fill="var(--text-tertiary)" opacity="0.6"/>
+              </g>
             </svg>
             <span>{$t('no_tasks')}</span>
             <span class="empty-hint">{$t('no_tasks_hint')}</span>
           </li>
         {/if}
 
-        {#each $tasks as task (task.id)}
+        {#each sortedTasks as task (task.id)}
           <li
             class="task-item"
             class:done={task.done}
@@ -218,11 +395,12 @@
               class="task-check"
               class:checked={task.selected && !task.done}
               class:completed={task.done}
+              class:timer-locked={!task.done && ($timer.status === 'running' || $timer.status === 'paused')}
               on:click={(e) => !task.done && handleToggleSelected(task.id, e.currentTarget.closest('.task-item'))}
               aria-label={task.done ? 'Tamamlandı' : task.selected ? 'Seçimi kaldır' : 'Bunu yapıyorum'}
               aria-pressed={task.selected}
-              disabled={task.done}
-              title={task.done ? 'Tamamlandı ✓' : task.selected ? 'Seçimi kaldır' : 'Üzerinde çalışmak için seç'}
+              disabled={task.done || $timer.status === 'running' || $timer.status === 'paused'}
+              title={task.done ? 'Tamamlandı ✓' : ($timer.status === 'running' || $timer.status === 'paused') ? 'Timer çalışırken değiştiremezsin' : task.selected ? 'Seçimi kaldır' : 'Üzerinde çalışmak için seç'}
             >
               {#if task.done}
                 <!-- Done: solid checkmark -->
@@ -240,19 +418,21 @@
             <div class="task-body">
               <span class="task-text">{task.text}</span>
               <div class="task-meta-row">
-                {@const spentMin = Math.floor(task.spentMinutes ?? 0)}
-                {@const totalMin = task.durationMinutes ?? task.pomodoros ?? 25}
-                {@const pct = Math.min(100, Math.round((spentMin / totalMin) * 100))}
-                <span class="task-progress font-mono">
-                  <span class="spent" class:accent={spentMin > 0}>{spentMin}</span>
-                  <span class="sep">/</span>
-                  <span class="total">{totalMin}</span>
-                  <span class="pomo-icon-sm">dk</span>
-                </span>
-                <!-- Mini progress bar -->
-                <div class="task-mini-bar" title="{pct}%">
-                  <div class="task-mini-fill" style="width:{pct}%"></div>
-                </div>
+                {#if true}
+                  {@const spentMin = Math.floor(task.spentMinutes ?? 0)}
+                  {@const totalMin = task.durationMinutes ?? task.pomodoros ?? 25}
+                  {@const pct = Math.min(100, Math.round((spentMin / totalMin) * 100))}
+                  <span class="task-progress font-mono">
+                    <span class="spent" class:accent={spentMin > 0}>{spentMin}</span>
+                    <span class="sep">/</span>
+                    <span class="total">{totalMin}</span>
+                    <span class="pomo-icon-sm">dk</span>
+                  </span>
+                  <!-- Mini progress bar -->
+                  <div class="task-mini-bar" title="{pct}%">
+                    <div class="task-mini-fill" style="width:{pct}%"></div>
+                  </div>
+                {/if}
               </div>
             </div>
 
@@ -406,8 +586,52 @@
 
   .task-list { list-style: none; display: flex; flex-direction: column; gap: 0.5rem; padding: 2px 2px 24px; }
 
-  .empty-state { display: flex; flex-direction: column; align-items: center; gap: 0.4rem; padding: 2rem 1rem; color: var(--text-tertiary); font-size: 0.8rem; text-align: center; }
+  .empty-state { display: flex; flex-direction: column; align-items: center; gap: 0.4rem; padding: 1.5rem 1rem; color: var(--text-tertiary); font-size: 0.8rem; text-align: center; }
   .empty-hint { font-size: 0.7rem; color: var(--text-tertiary); opacity: 0.6; }
+
+  .empty-illustration { margin-bottom: 0.25rem; }
+
+  .empty-clipboard {
+    animation: empty-float 3.5s ease-in-out infinite;
+    transform-origin: center;
+  }
+  @keyframes empty-float {
+    0%, 100% { transform: translateY(0) rotate(-1deg); }
+    50%      { transform: translateY(-6px) rotate(1deg); }
+  }
+
+  .empty-line {
+    stroke-dasharray: 40;
+    animation: empty-draw 2.4s ease-in-out infinite;
+  }
+  .empty-line.e1 { animation-delay: 0s; }
+  .empty-line.e2 { animation-delay: 0.3s; }
+  .empty-line.e3 { animation-delay: 0.6s; }
+  @keyframes empty-draw {
+    0%, 100% { opacity: 0.35; stroke-dashoffset: 0; }
+    50%      { opacity: 0.9; }
+  }
+
+  .empty-dot {
+    animation: empty-drift 4s ease-in-out infinite;
+  }
+  .d1 { animation-delay: 0s; }
+  .d2 { animation-delay: 1.2s; }
+  .d3 { animation-delay: 2.1s; }
+  @keyframes empty-drift {
+    0%, 100% { transform: translate(0, 0); opacity: 0.3; }
+    50%      { transform: translate(3px, -8px); opacity: 0.7; }
+  }
+
+  .empty-pencil {
+    animation: empty-wiggle 2.8s ease-in-out infinite;
+    transform-origin: 92px 54px;
+  }
+  @keyframes empty-wiggle {
+    0%, 100% { transform: rotate(0deg); }
+    25%      { transform: rotate(-8deg); }
+    75%      { transform: rotate(6deg); }
+  }
 
   /* Task item */
   .task-item {
@@ -445,6 +669,7 @@
     color: white;
   }
   .task-check:disabled { cursor: default; }
+  .task-check.timer-locked { cursor: not-allowed; opacity: 0.5; }
 
   /* Body */
   .task-body { flex: 1; min-width: 0; display: flex; flex-direction: column; gap: 0.35rem; }
@@ -471,6 +696,46 @@
     border-radius: var(--radius-md); padding: 0.5rem 0.75rem;
   }
   .auth-gate svg { flex-shrink: 0; opacity: 0.6; }
+
+  .quick-suggestions {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 0.4rem;
+    margin-top: -0.15rem;
+  }
+  .quick-chip {
+    display: inline-flex;
+    align-items: center;
+    gap: 0.3rem;
+    padding: 0.3rem 0.6rem;
+    border-radius: 999px;
+    background: var(--bg-elevated);
+    border: 1px solid var(--border-subtle);
+    color: var(--text-secondary);
+    font-size: 0.7rem;
+    font-weight: 600;
+    cursor: pointer;
+    transition: border-color var(--transition-fast), color var(--transition-fast), background var(--transition-fast), transform var(--transition-fast);
+    max-width: 100%;
+  }
+  .quick-chip:hover {
+    border-color: var(--accent);
+    color: var(--accent);
+    background: var(--accent-subtle);
+    transform: translateY(-1px);
+  }
+  .quick-chip-icon { font-size: 0.7rem; opacity: 0.7; flex-shrink: 0; }
+  .quick-chip-text {
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+    max-width: 140px;
+  }
+  .quick-chip-dur {
+    font-size: 0.62rem;
+    opacity: 0.6;
+    flex-shrink: 0;
+  }
   .auth-gate-link {
     color: var(--accent); font-weight: 700; text-decoration: none;
     font-family: var(--font-mono); font-size: 0.68rem; letter-spacing: 0.05em;
@@ -482,5 +747,6 @@
 
   @media (max-width: 600px) {
     .task-panel { width: 100%; max-width: 100%; height: auto; min-height: 420px; max-height: 70vh; }
+    .quick-chip-text { max-width: 100px; }
   }
 </style>

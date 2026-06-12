@@ -1,5 +1,5 @@
 <script>
-  import { onMount, afterUpdate } from 'svelte';
+  import { onMount } from 'svelte';
   import { initGSAP } from '$lib/utils/gsap';
 
   export let progress = 0;
@@ -135,5 +135,6 @@
   .progress-ring {
     flex-shrink: 0;
     will-change: transform;
+    overflow: visible;
   }
 </style>
