@@ -4,6 +4,7 @@
   import { browser } from '$app/environment';
 
   export let show = false;
+  export let wide = false;
 
   const dispatch = createEventDispatcher();
 
@@ -43,7 +44,7 @@
       aria-modal="true"
       transition:fade={{ duration: 180 }}
     >
-      <div class="box" transition:fly={{ y: 28, duration: 260, opacity: 0 }}>
+      <div class="box" class:wide transition:fly={{ y: 28, duration: 260, opacity: 0 }}>
         <slot />
       </div>
     </div>
@@ -80,5 +81,8 @@
     box-shadow:
       0 32px 80px rgba(0, 0, 0, 0.6),
       0 0 0 1px rgba(255, 255, 255, 0.05);
+  }
+  .box.wide {
+    max-width: 680px;
   }
 </style>

@@ -5,7 +5,8 @@
   import { initGSAP, magneticHover, glitchText } from '$lib/utils/gsap';
   import { recordSession, auth } from '$lib/stores/api';
   import { tasks } from '$lib/stores/tasks';
-  import { notifyTimerComplete } from '$lib/utils/notifications';
+  import { notifyTimerComplete, notifyLongBreakSuggestion, isNotificationSupported, getPermission, requestNotificationPermission } from '$lib/utils/notifications';
+  import { toast } from '$lib/stores/toast';
   import ShortcutsOverlay from './ShortcutsOverlay.svelte';
 
   let showShortcuts = false;
@@ -107,6 +108,32 @@
     tasks.addTime(duration);
     // Browser notification if tab is in background
     notifyTimerComplete(mode);
+    maybePromptNotifications();
+  }
+
+  // Gentle, one-time nudge: after the user's first completed session,
+  // if they haven't been asked about notifications yet, offer to turn
+  // them on (so timer/task alerts can reach them when the tab is in
+  // the background). Never asks again after the first time.
+  const NOTIF_PROMPT_KEY = 'velocity-notif-prompt-shown';
+  function maybePromptNotifications() {
+    if (!isNotificationSupported()) return;
+    if (getPermission() !== 'default') return; // already granted or denied
+    if (localStorage.getItem(NOTIF_PROMPT_KEY)) return;
+    localStorage.setItem(NOTIF_PROMPT_KEY, '1');
+
+    toast.withAction(
+      '🔔 Sekme arka plandayken bildirim almak ister misin?',
+      { label: 'Aç', onClick: () => requestNotificationPermission() },
+      'info'
+    );
+  }
+
+  // After 4 completed focus sessions, suggest a long break.
+  $: if ($timer.suggestLongBreak) {
+    timer.clearLongBreakSuggestion();
+    toast.info('🎉 4 focus oturumu tamamladın! Uzun bir ara zamanı.', 6000);
+    notifyLongBreakSuggestion();
   }
 
   $: if (gsap && $timer.status !== lastStatus) {
@@ -192,6 +219,7 @@
       <button
         role="tab"
         aria-selected={$timer.mode === mode.id}
+        aria-disabled={$timer.status === 'running'}
         class="mode-btn"
         class:active={$timer.mode === mode.id}
         disabled={$timer.status === 'running'}
@@ -203,6 +231,9 @@
       </button>
     {/each}
   </div>
+  <p class="sr-only" aria-live="polite">
+    {$timer.status === 'running' ? 'Timer çalışıyor, mod değiştirmek için önce durdurun veya sıfırlayın.' : ''}
+  </p>
 
   {#if showCustomInput}
     <div class="custom-input-row">
@@ -245,11 +276,11 @@
         {LABELS[$timer.mode]}
       </div>
 
-      <div class="session-indicator" aria-label="Session {$timer.session}">
+      <div class="session-indicator" aria-label="Pomodoro cycle {$timer.session}/4">
         {#each Array(4) as _, i}
           <span
             class="session-dot"
-            class:filled={i < ($timer.session - 1) % 4 + ($timer.status === 'completed' && $timer.mode === 'focus' ? 1 : 0)}
+            class:filled={$timer.suggestLongBreak || i < $timer.session - 1 || ($timer.status === 'completed' && $timer.mode === 'focus' && i === $timer.session - 1)}
           ></span>
         {/each}
       </div>

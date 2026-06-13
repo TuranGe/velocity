@@ -27,6 +27,11 @@
           <span class="toast-code">[{t.code}]</span>
         {/if}
       </div>
+      {#if t.action}
+        <button class="toast-action" on:click={() => { t.action.onClick?.(); toast.dismiss(t.id); }}>
+          {t.action.label}
+        </button>
+      {/if}
       <button class="toast-close" on:click={() => toast.dismiss(t.id)} aria-label="Dismiss">✕</button>
     </div>
   {/each}
@@ -91,4 +96,21 @@
     transition: color var(--transition-fast);
   }
   .toast-close:hover { color: var(--text-primary); }
+
+  .toast-action {
+    flex-shrink: 0;
+    background: var(--accent);
+    color: white;
+    border: none;
+    border-radius: var(--radius-sm);
+    padding: 0.35rem 0.7rem;
+    font-size: 0.7rem;
+    font-weight: 700;
+    font-family: var(--font-mono);
+    text-transform: uppercase;
+    letter-spacing: 0.05em;
+    cursor: pointer;
+    transition: background var(--transition-fast);
+  }
+  .toast-action:hover { background: var(--accent-hover); }
 </style>

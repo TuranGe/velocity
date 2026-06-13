@@ -9,6 +9,8 @@
   import { toast } from '$lib/stores/toast';
   import { t } from '$lib/stores/i18n';
   import { weeklyGoal } from '$lib/stores/weeklyGoal';
+  import { getCachedProfilePhoto, setCachedProfilePhoto } from '$lib/utils/profilePhotoCache';
+  import { computeWeeklyStats } from '$lib/utils/weeklyStats';
 
   let user = $auth.user;
   let editing = false;
@@ -16,7 +18,7 @@
   let showAvatarModal = false;
   let showShareCard = false;
   let bio = user?.bio || '';
-  let profileImageUrl = user?.profile_image || '';
+  let profileImageUrl = user?.profile_image || getCachedProfilePhoto() || '';
   let usernameEdit = user?.username || '';
   let remoteStats = null;
   let recentSessions = [];
@@ -34,8 +36,11 @@
   $: user = $auth.user;
   $: if (user && !editing && !saving) {
     bio = user.bio || '';
-    profileImageUrl = user.profile_image || '';
+    profileImageUrl = user.profile_image || getCachedProfilePhoto() || '';
     usernameEdit = user.username || '';
+    // If the backend now has a saved photo, that's the source of truth —
+    // sync the local cache to match (covers cross-device logins, etc).
+    if (user.profile_image) setCachedProfilePhoto(user.profile_image);
   }
 
   onMount(async () => {
@@ -88,7 +93,7 @@
   }
 
   function openAvatarModal() { editing = true; showAvatarModal = true; }
-  function clearPhoto() { profileImageUrl = ''; }
+  function clearPhoto() { profileImageUrl = ''; setCachedProfilePhoto(''); }
   function triggerFilePicker() { fileInput?.click(); }
 
   async function handlePhotoUpload(event) {
@@ -98,7 +103,13 @@
     if (file.size > 5 * 1024 * 1024) { toast.error($t('profile_photo_too_large')); return; }
     if (!file.type.startsWith('image/')) { toast.error($t('profile_invalid_image')); return; }
     const reader = new FileReader();
-    reader.onload = () => { profileImageUrl = typeof reader.result === 'string' ? reader.result : ''; showAvatarModal = false; };
+    reader.onload = () => {
+      profileImageUrl = typeof reader.result === 'string' ? reader.result : '';
+      // Cache immediately — independent of whether the backend save
+      // below succeeds, so ShareCard can always find this photo.
+      setCachedProfilePhoto(profileImageUrl);
+      showAvatarModal = false;
+    };
     reader.readAsDataURL(file);
   }
 
@@ -124,7 +135,7 @@
     showAvatarModal = false;
     bio = user?.bio || '';
     usernameEdit = user?.username || '';
-    profileImageUrl = user?.profile_image || '';
+    profileImageUrl = user?.profile_image || getCachedProfilePhoto() || '';
   }
 
   $: totalMinutes = remoteStats
@@ -154,6 +165,11 @@
     });
   })();
   $: chartMax = Math.max(...(chartDays.map(d => d.minutes)), 1);
+
+  // Canonical "last 7 days" numbers — shared with WeeklySummaryModal so
+  // the share card (labeled "WEEKLY RECAP") and the weekend recap modal
+  // never disagree on what "this week" means.
+  $: weeklyStats = computeWeeklyStats(dailyData, $tasks, currentStreak);
 
   // Weekly goal tracking
   $: weeklyMinutes = chartDays.reduce((sum, d) => sum + (d.minutes || 0), 0);
@@ -538,11 +554,11 @@
     bind:show={showShareCard}
     username={user.username}
     initials={initials}
-    totalHours={totalHours}
-    totalSessions={totalSessions}
-    totalTasks={totalTasks}
-    doneTasks={doneTasks}
-    chartDays={chartDays}
+    profileImage={profileImageUrl}
+    totalHours={weeklyStats.totalHours}
+    totalSessions={weeklyStats.totalSessions}
+    doneTasks={weeklyStats.tasksCompleted}
+    chartDays={weeklyStats.chartDays}
     currentStreak={currentStreak}
   />
 {/if}

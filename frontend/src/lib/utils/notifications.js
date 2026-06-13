@@ -1,5 +1,5 @@
 import { browser } from '$app/environment';
-import { writable } from 'svelte/store';
+import { writable, get } from 'svelte/store';
 
 const STORAGE_KEY = 'velocity-notifications-enabled';
 
@@ -51,6 +51,10 @@ const MODE_MESSAGES = {
 export function notifyTimerComplete(mode) {
   if (!isNotificationSupported()) return;
   if (Notification.permission !== 'granted') return;
+  // Respect the in-app toggle — browser permission being "granted"
+  // doesn't mean the user wants notifications right now; they may have
+  // turned the in-app setting back off.
+  if (!get(notificationsEnabled)) return;
   if (document.visibilityState === 'visible') return;
 
   const msg = MODE_MESSAGES[mode] || MODE_MESSAGES['custom'];
@@ -74,6 +78,7 @@ export function notifyTimerComplete(mode) {
 export function notifyTaskComplete(taskText) {
   if (!isNotificationSupported()) return;
   if (Notification.permission !== 'granted') return;
+  if (!get(notificationsEnabled)) return;
   if (document.visibilityState === 'visible') return;
 
   try {
@@ -84,5 +89,24 @@ export function notifyTaskComplete(taskText) {
     });
     n.onclick = () => { window.focus(); n.close(); };
     setTimeout(() => n.close(), 6000);
+  } catch {}
+}
+
+// Notify after 4 completed focus sessions — classic Pomodoro cue to
+// take a longer break.
+export function notifyLongBreakSuggestion() {
+  if (!isNotificationSupported()) return;
+  if (Notification.permission !== 'granted') return;
+  if (!get(notificationsEnabled)) return;
+  if (document.visibilityState === 'visible') return;
+
+  try {
+    const n = new Notification('🎉 4 oturum tamamlandı!', {
+      body: 'Uzun bir ara vermenin zamanı geldi.',
+      icon: '/favicon.png',
+      tag: 'velocity-long-break',
+    });
+    n.onclick = () => { window.focus(); n.close(); };
+    setTimeout(() => n.close(), 8000);
   } catch {}
 }

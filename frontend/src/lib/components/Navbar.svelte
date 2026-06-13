@@ -4,6 +4,7 @@
   import ThemeToggle from './ThemeToggle.svelte';
   import SoundSettings from './SoundSettings.svelte';
   import { magneticHover, initGSAP } from '$lib/utils/gsap';
+  import { createAmbientEngine } from '$lib/utils/ambientAudio';
   import { t, lang, toggleLang } from '$lib/stores/i18n';
   import { auth } from '$lib/stores/api';
   import { audio } from '$lib/stores/audio';
@@ -17,7 +18,7 @@
   // Music
   let musicPlaying = false;
   let currentTrack = 'lofi';
-  let audioCtx = null, musicNodes = [], musicGain = null;
+  const ambient = createAmbientEngine();
 
   // Sound settings modal
   let showSoundSettings = false;
@@ -53,217 +54,28 @@
     cleanup = magneticHover(logoEl, 0.3);
   });
 
-  // Listen for volume changes and update music gain in real-time
+  // Keep engine volume in sync with the audio store
   audio.subscribe(audioState => {
-    if (musicGain && audioCtx && musicPlaying) {
-      musicGain.gain.linearRampToValueAtTime(audioState.volume, audioCtx.currentTime + 0.1);
-    }
+    if (musicPlaying) ambient.setVolume(audioState.volume);
   });
 
-  onDestroy(() => { cleanup?.(); stopMusic(); });
+  onDestroy(() => { cleanup?.(); ambient.stop({ immediate: true }); });
 
   // ── Music ──────────────────────────────────────────────────
-  // Lo-fi study music: layered noise + melodic pads + subtle rhythm
-  function createAmbientMusic(track = 'lofi') {
-    if (!$audio.enabled) return;
-    audioCtx = new (window.AudioContext || window.webkitAudioContext)();
-
-    // Master gain with fade-in
-    musicGain = audioCtx.createGain();
-    musicGain.gain.setValueAtTime(0, audioCtx.currentTime);
-    musicGain.gain.linearRampToValueAtTime($audio.volume, audioCtx.currentTime + 3);
-    musicGain.connect(audioCtx.destination);
-
-    // ── Vinyl noise / rain texture ──────────────────────────
-    const bufSize = audioCtx.sampleRate * 3;
-    const noiseBuffer = audioCtx.createBuffer(1, bufSize, audioCtx.sampleRate);
-    const noiseData = noiseBuffer.getChannelData(0);
-    for (let i = 0; i < bufSize; i++) {
-      // Brownian noise (warmer, deeper than white)
-      noiseData[i] = i === 0 ? 0 : noiseData[i-1] + (Math.random() * 2 - 1) * 0.05;
-      noiseData[i] = Math.max(-1, Math.min(1, noiseData[i]));
-    }
-    const noiseSource = audioCtx.createBufferSource();
-    noiseSource.buffer = noiseBuffer;
-    noiseSource.loop = true;
-
-    // Bandpass filter to shape noise into "vinyl crackle" frequency range
-    const noiseBP = audioCtx.createBiquadFilter();
-    noiseBP.type = 'bandpass';
-    noiseBP.frequency.value = 1200;
-    noiseBP.Q.value = 0.8;
-
-    const noiseGain = audioCtx.createGain();
-    noiseGain.gain.value = 0.025;
-    noiseSource.connect(noiseBP);
-    noiseBP.connect(noiseGain);
-    noiseGain.connect(musicGain);
-    noiseSource.start();
-    musicNodes.push(noiseSource, noiseBP, noiseGain);
-
-    // ── Warm low-pass filter for all melodic content ────────
-    const warmFilter = audioCtx.createBiquadFilter();
-    warmFilter.type = 'lowpass';
-    warmFilter.frequency.value = 3500;
-    warmFilter.Q.value = 0.5;
-    warmFilter.connect(musicGain);
-
-    // ── Lo-fi chord pads: Fmaj7 voicing ─────────────────────
-    // F2, A2, C3, E3, A3 — dreamy jazz chord
-    const chordFreqs = [87.31, 110, 130.81, 164.81, 220, 261.63];
-    const chordGains = [0.18, 0.14, 0.12, 0.10, 0.08, 0.06];
-    chordFreqs.forEach((freq, i) => {
-      const osc = audioCtx.createOscillator();
-      const g = audioCtx.createGain();
-      // Mix sine and triangle for warmth
-      osc.type = i < 3 ? 'sine' : 'triangle';
-      osc.frequency.value = freq;
-      // Slight detune for chorus warmth
-      osc.detune.value = (i % 2 === 0 ? 1 : -1) * (2 + i * 0.3);
-      g.gain.value = chordGains[i] * 0.6;
-
-      // Slow tremolo LFO
-      const tremoloLFO = audioCtx.createOscillator();
-      const tremoloDepth = audioCtx.createGain();
-      tremoloLFO.frequency.value = 0.15 + i * 0.03;
-      tremoloDepth.gain.value = chordGains[i] * 0.08;
-      tremoloLFO.connect(tremoloDepth);
-      tremoloDepth.connect(g.gain);
-      tremoloLFO.start();
-
-      osc.connect(g);
-      g.connect(warmFilter);
-      osc.start();
-      musicNodes.push(osc, g, tremoloLFO, tremoloDepth);
-    });
-
-    // ── Subtle bass pulse ────────────────────────────────────
-    // Slow rhythmic swell on the root (F1)
-    const bassOsc = audioCtx.createOscillator();
-    const bassGain = audioCtx.createGain();
-    const bassFilter = audioCtx.createBiquadFilter();
-    bassOsc.type = 'sine';
-    bassOsc.frequency.value = 43.65; // F1
-    bassFilter.type = 'lowpass';
-    bassFilter.frequency.value = 180;
-    bassGain.gain.value = 0;
-    bassOsc.connect(bassFilter);
-    bassFilter.connect(bassGain);
-    bassGain.connect(musicGain);
-    bassOsc.start();
-
-    // Automate bass swell — gentle pulse every ~4 seconds
-    function scheduleBass() {
-      if (!audioCtx) return;
-      const t = audioCtx.currentTime;
-      bassGain.gain.cancelScheduledValues(t);
-      bassGain.gain.setValueAtTime(0, t);
-      bassGain.gain.linearRampToValueAtTime(0.22, t + 1.2);
-      bassGain.gain.linearRampToValueAtTime(0.05, t + 3.5);
-      bassGain.gain.linearRampToValueAtTime(0, t + 4.2);
-      setTimeout(() => scheduleBass(), 5000);
-    }
-    setTimeout(() => scheduleBass(), 800);
-    musicNodes.push(bassOsc, bassGain, bassFilter);
-
-    // ── High shimmer (very subtle) ───────────────────────────
-    const shimmerFreqs = [523.25, 659.25, 783.99]; // C5, E5, G5
-    shimmerFreqs.forEach((freq, i) => {
-      const osc = audioCtx.createOscillator();
-      const g = audioCtx.createGain();
-      osc.type = 'sine';
-      osc.frequency.value = freq;
-      osc.detune.value = (Math.random() - 0.5) * 6;
-      g.gain.value = 0;
-      osc.connect(g);
-      g.connect(warmFilter);
-      osc.start();
-
-      // Sporadic shimmer automation
-      function scheduleShimmer() {
-        if (!audioCtx) return;
-        const t = audioCtx.currentTime + Math.random() * 8 + 4;
-        g.gain.setValueAtTime(0, t);
-        g.gain.linearRampToValueAtTime(0.018, t + 0.6);
-        g.gain.linearRampToValueAtTime(0, t + 2.5);
-        setTimeout(() => scheduleShimmer(), (Math.random() * 8 + 6) * 1000);
-      }
-      scheduleShimmer();
-      musicNodes.push(osc, g);
-    });
-
-    musicNodes.push(warmFilter);
-
-    // ── Track variants ───────────────────────────────────────
-    if (track === 'nature') {
-      // Add rain-like filtered noise burst
-      const rainBuf = audioCtx.createBuffer(1, audioCtx.sampleRate * 4, audioCtx.sampleRate);
-      const rainData = rainBuf.getChannelData(0);
-      for (let i = 0; i < rainData.length; i++) rainData[i] = Math.random() * 2 - 1;
-      const rainSrc = audioCtx.createBufferSource();
-      rainSrc.buffer = rainBuf;
-      rainSrc.loop = true;
-      const rainHP = audioCtx.createBiquadFilter();
-      rainHP.type = 'highpass';
-      rainHP.frequency.value = 2800;
-      const rainGain = audioCtx.createGain();
-      rainGain.gain.value = 0.06;
-      rainSrc.connect(rainHP);
-      rainHP.connect(rainGain);
-      rainGain.connect(musicGain);
-      rainSrc.start();
-      musicNodes.push(rainSrc, rainHP, rainGain);
-      // Reduce vinyl noise for nature track
-      noiseGain.gain.value = 0.01;
-    } else if (track === 'deepwork') {
-      // Add 40Hz gamma binaural-like tone in left/right channels
-      if (audioCtx.destination.channelCount >= 2) {
-        const splitter = audioCtx.createChannelSplitter(2);
-        const merger = audioCtx.createChannelMerger(2);
-        const gammaL = audioCtx.createOscillator();
-        const gammaR = audioCtx.createOscillator();
-        const gGain = audioCtx.createGain();
-        gGain.gain.value = 0.04;
-        gammaL.type = 'sine';
-        gammaL.frequency.value = 200;
-        gammaR.type = 'sine';
-        gammaR.frequency.value = 240; // 40Hz difference = gamma
-        gammaL.connect(gGain);
-        gammaR.connect(gGain);
-        gGain.connect(musicGain);
-        gammaL.start();
-        gammaR.start();
-        musicNodes.push(gammaL, gammaR, gGain);
-      }
-      // Reduce chord prominence for focus
-      chordFreqs.forEach((_, i) => {
-        // already connected above; deepwork uses same pads but noise reduced
-      });
-      noiseGain.gain.value = 0.01;
-    }
-  }
-
-  function stopMusic() {
-    if (musicGain && audioCtx) {
-      musicGain.gain.linearRampToValueAtTime(0, audioCtx.currentTime + 1.5);
-      setTimeout(() => {
-        musicNodes.forEach(n => { try { n.stop?.(); n.disconnect?.(); } catch {} });
-        musicNodes = []; audioCtx?.close(); audioCtx = null; musicGain = null;
-      }, 1600);
-    }
-  }
-
   function toggleMusic() {
-    if (musicPlaying) { musicPlaying = false; stopMusic(); }
-    else { musicPlaying = true; createAmbientMusic(currentTrack); }
+    if (musicPlaying) {
+      musicPlaying = false;
+      ambient.stop();
+    } else {
+      if (!$audio.enabled) return;
+      musicPlaying = true;
+      ambient.start(currentTrack, $audio.volume);
+    }
   }
 
   function handleTrackChange(trackId) {
     currentTrack = trackId;
-    if (musicPlaying) {
-      stopMusic();
-      setTimeout(() => createAmbientMusic(trackId), 1700);
-    }
+    if (musicPlaying) ambient.changeTrack(trackId, $audio.volume);
   }
 
   // Auto-switch music track based on timer mode
@@ -374,9 +186,10 @@
 
   <div class="nav-controls">
     <!-- Sound Settings -->
-    <button class="icon-btn settings-btn" on:click={() => showSoundSettings = true}
+    <button class="icon-btn settings-btn" class:playing={musicPlaying} on:click={() => showSoundSettings = true}
       title="Sound settings" aria-label="Sound settings">
       🔊
+      {#if musicPlaying}<span class="playing-dot"></span>{/if}
     </button>
 
     <!-- Language -->
@@ -506,15 +319,22 @@
     transition: all var(--transition-fast); cursor: pointer;
   }
   .icon-btn:hover { border-color: var(--accent); color: var(--accent); background: var(--accent-subtle); }
-  .music-btn.playing { border-color: var(--accent); color: var(--accent); background: var(--accent-subtle); box-shadow: 0 0 10px var(--accent-glow); }
   .lang-btn { font-size: 0.65rem; font-weight: 700; letter-spacing: 0.1em; }
 
-  .music-bars { display: flex; align-items: flex-end; gap: 2px; height: 13px; }
-  .music-bars span { display: block; width: 3px; border-radius: 2px; background: currentColor; height: 4px; }
-  .music-bars.active span:nth-child(1) { animation: b1 0.8s ease-in-out infinite; }
-  .music-bars.active span:nth-child(2) { animation: b2 0.8s ease-in-out infinite 0.15s; }
-  .music-bars.active span:nth-child(3) { animation: b3 0.8s ease-in-out infinite 0.3s; }
-  @keyframes b1{0%,100%{height:4px}50%{height:12px}} @keyframes b2{0%,100%{height:8px}50%{height:4px}} @keyframes b3{0%,100%{height:4px}50%{height:10px}}
+  .settings-btn { position: relative; }
+  .playing-dot {
+    position: absolute;
+    top: 4px; right: 4px;
+    width: 6px; height: 6px;
+    border-radius: 50%;
+    background: var(--accent);
+    box-shadow: 0 0 6px var(--accent-glow);
+    animation: pulse-dot 2s ease-in-out infinite;
+  }
+  @keyframes pulse-dot {
+    0%, 100% { opacity: 1; transform: scale(1); }
+    50% { opacity: 0.5; transform: scale(0.8); }
+  }
 
   /* User menu */
   .user-menu { position: relative; }

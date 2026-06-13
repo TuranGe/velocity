@@ -1,6 +1,9 @@
 <script>
+  import { onMount, onDestroy } from 'svelte';
   import Modal from './Modal.svelte';
   import { toast } from '$lib/stores/toast';
+  import { auth } from '$lib/stores/api';
+  import { getCachedProfilePhoto } from '$lib/utils/profilePhotoCache';
 
   export let show = false;
   export let username = 'User';
@@ -8,68 +11,61 @@
   export let profileImage = '';
   export let totalHours = '0.0';
   export let totalSessions = 0;
-  export let totalTasks = 0;
   export let doneTasks = 0;
   export let chartDays = []; // [{ label, minutes, isToday }]
   export let currentStreak = 0;
 
-  let svgEl;
+  const CARD_W = 600;
+  const CARD_H = 320;
+
+  let cardEl;
+  let wrapEl;
   let downloading = false;
-  let resolvedProfileImage = '';
+  let scale = 1;
+
+  // Belt-and-suspenders: prefer the explicit prop, then the logged-in
+  // user object (covers localStorage-restored sessions), then the
+  // local photo cache (covers the case where the backend save hasn't
+  // gone through yet) — so the photo shows up "no matter what".
+  $: resolvedImage = profileImage || $auth.user?.profile_image || getCachedProfilePhoto() || '';
 
   $: chartMax = Math.max(...(chartDays.map(d => d.minutes)), 1);
 
-  // Convert remote/profile image URLs to a data URL so the SVG <image>
-  // embeds reliably and canvas export doesn't get tainted by CORS.
-  $: if (profileImage) {
-    if (profileImage.startsWith('data:')) {
-      resolvedProfileImage = profileImage;
-    } else {
-      resolvedProfileImage = '';
-      toDataURL(profileImage).then(d => { resolvedProfileImage = d; }).catch(() => { resolvedProfileImage = ''; });
-    }
-  } else {
-    resolvedProfileImage = '';
+  function updateScale() {
+    if (!wrapEl) return;
+    const available = wrapEl.clientWidth;
+    scale = Math.min(1, available / CARD_W);
   }
 
-  async function toDataURL(src) {
-    const res = await fetch(src, { mode: 'cors' });
-    const blob = await res.blob();
-    return await new Promise((resolve, reject) => {
-      const reader = new FileReader();
-      reader.onload = () => resolve(reader.result);
-      reader.onerror = reject;
-      reader.readAsDataURL(blob);
-    });
-  }
+  let resizeObserver;
+  onMount(() => {
+    updateScale();
+    resizeObserver = new ResizeObserver(updateScale);
+    if (wrapEl) resizeObserver.observe(wrapEl);
+  });
+  onDestroy(() => resizeObserver?.disconnect());
 
   async function downloadCard() {
-    if (!svgEl) return;
+    if (!cardEl) return;
     downloading = true;
     try {
-      const svgData = new XMLSerializer().serializeToString(svgEl);
-      const svgBlob = new Blob([svgData], { type: 'image/svg+xml;charset=utf-8' });
-      const url = URL.createObjectURL(svgBlob);
-
-      const img = new Image();
-      img.crossOrigin = 'anonymous';
-
-      await new Promise((resolve, reject) => {
-        img.onload = resolve;
-        img.onerror = reject;
-        img.src = url;
+      const html2canvas = (await import('html2canvas')).default;
+      // Render the un-scaled 600x320 card regardless of on-screen size
+      const canvas = await html2canvas(cardEl, {
+        scale: 2,
+        width: CARD_W,
+        height: CARD_H,
+        backgroundColor: null,
+        useCORS: true,
+        logging: false,
       });
 
-      const scale = 2; // retina-ish export
-      const canvas = document.createElement('canvas');
-      canvas.width = 600 * scale;
-      canvas.height = 320 * scale;
-      const ctx = canvas.getContext('2d');
-      ctx.scale(scale, scale);
-      ctx.drawImage(img, 0, 0, 600, 320);
-      URL.revokeObjectURL(url);
-
       canvas.toBlob((blob) => {
+        if (!blob) {
+          downloading = false;
+          toast.warn?.('Kart oluşturulamadı, tekrar dene');
+          return;
+        }
         const link = document.createElement('a');
         link.download = `velocity-${username}-stats.png`;
         link.href = URL.createObjectURL(blob);
@@ -85,100 +81,88 @@
   }
 </script>
 
-<Modal bind:show on:close={() => (show = false)}>
+<Modal bind:show wide on:close={() => (show = false)}>
   <div class="share-modal-header">
     <h3>📊 İstatistik Kartı</h3>
   </div>
-  <div class="share-card-wrap">
-    <svg
-      bind:this={svgEl}
-      class="share-svg"
-      width="600" height="320" viewBox="0 0 600 320"
-      xmlns="http://www.w3.org/2000/svg"
-    >
-      <!-- Background -->
-      <defs>
-        <linearGradient id="bg" x1="0" y1="0" x2="1" y2="1">
-          <stop offset="0%" stop-color="#1a1a1a"/>
-          <stop offset="100%" stop-color="#0d0d0d"/>
-        </linearGradient>
-        <linearGradient id="accentGrad" x1="0" y1="0" x2="1" y2="0">
-          <stop offset="0%" stop-color="#f97316"/>
-          <stop offset="100%" stop-color="#fb923c"/>
-        </linearGradient>
-        <clipPath id="avatarClip">
-          <circle cx="48" cy="48" r="22"/>
-        </clipPath>
-      </defs>
-      <rect width="600" height="320" rx="20" fill="url(#bg)"/>
-      <rect x="1" y="1" width="598" height="318" rx="19" fill="none" stroke="#2a2a2a" stroke-width="1"/>
 
-      <!-- Header -->
-      {#if resolvedProfileImage}
-        <image
-          href={resolvedProfileImage}
-          x="26" y="26" width="44" height="44"
-          clip-path="url(#avatarClip)"
-          preserveAspectRatio="xMidYMid slice"
-        />
-        <circle cx="48" cy="48" r="22" fill="none" stroke="#f97316" stroke-width="1.5"/>
-      {:else}
-        <circle cx="48" cy="48" r="22" fill="url(#accentGrad)"/>
-        <text x="48" y="56" font-family="monospace" font-size="20" font-weight="800" fill="#0d0d0d" text-anchor="middle">{initials}</text>
-      {/if}
+  <div class="share-card-wrap" bind:this={wrapEl}>
+    <div class="share-card-scaler" style="width: {CARD_W * scale}px; height: {CARD_H * scale}px;">
+      <div
+        class="share-card"
+        bind:this={cardEl}
+        style="width: {CARD_W}px; height: {CARD_H}px; transform: scale({scale});"
+      >
+        <!-- Header -->
+        <div class="sc-header">
+          <div class="sc-avatar">
+            {#if resolvedImage}
+              <img
+                src={resolvedImage}
+                alt={username}
+                class="sc-avatar-img"
+                crossorigin={resolvedImage.startsWith('data:') ? undefined : 'anonymous'}
+              />
+            {:else}
+              <div class="sc-avatar-fallback">{initials}</div>
+            {/if}
+          </div>
+          <div class="sc-identity">
+            <div class="sc-username">{username}</div>
+            <div class="sc-tagline">VELOCITY · WEEKLY RECAP</div>
+          </div>
 
-      <text x="84" y="44" font-family="system-ui, sans-serif" font-size="22" font-weight="800" fill="#ffffff">{username}</text>
-      <text x="84" y="64" font-family="monospace" font-size="11" font-weight="700" letter-spacing="2" fill="#f97316">VELOCITY · WEEKLY RECAP</text>
+          <div class="sc-header-right">
+            {#if currentStreak > 0}
+              <div class="sc-streak" class:hot={currentStreak >= 7}>🔥 <span>{currentStreak} GÜN STREAK</span></div>
+            {/if}
+            <div class="sc-logo">
+              <svg viewBox="0 0 28 28" width="28" height="28" xmlns="http://www.w3.org/2000/svg">
+                <circle cx="14" cy="14" r="12" stroke="#444" stroke-width="1.5" fill="none" opacity="0.5"/>
+                <circle cx="14" cy="14" r="12" stroke="#f97316" stroke-width="1.5" fill="none"
+                  stroke-dasharray="75.4" stroke-dashoffset="18.85" stroke-linecap="round" transform="rotate(-90 14 14)"/>
+                <path d="M11 9.5L18.5 14L11 18.5V9.5Z" fill="#f97316"/>
+              </svg>
+            </div>
+          </div>
+        </div>
 
-      {#if currentStreak > 0}
-        <g transform="translate(370, 22)">
-          <rect x="0" y="0" width="120" height="30" rx="15" fill="#2a1a0d" stroke="#f97316" stroke-width="1"/>
-          <text x="12" y="21" font-size="15">🔥</text>
-          <text x="35" y="21" font-family="monospace" font-size="12" font-weight="800" fill="#fb923c">{currentStreak} GÜN STREAK</text>
-        </g>
-      {/if}
+        <!-- Stats row -->
+        <div class="sc-stats">
+          <div class="sc-stat">
+            <div class="sc-stat-value accent">{totalHours}</div>
+            <div class="sc-stat-label">SAAT FOCUS</div>
+          </div>
+          <div class="sc-stat">
+            <div class="sc-stat-value">{totalSessions}</div>
+            <div class="sc-stat-label">OTURUM</div>
+          </div>
+          <div class="sc-stat">
+            <div class="sc-stat-value">{doneTasks}</div>
+            <div class="sc-stat-label">TAMAMLANAN GÖREV</div>
+          </div>
+        </div>
 
-      <!-- Logo mark -->
-      <g transform="translate(540, 32)">
-        <circle cx="14" cy="14" r="12" stroke="#444" stroke-width="1.5" fill="none" opacity="0.5"/>
-        <circle cx="14" cy="14" r="12" stroke="#f97316" stroke-width="1.5" fill="none"
-          stroke-dasharray="75.4" stroke-dashoffset="18.85" stroke-linecap="round" transform="rotate(-90 14 14)"/>
-        <path d="M11 9.5L18.5 14L11 18.5V9.5Z" fill="#f97316"/>
-      </g>
+        <div class="sc-divider"></div>
 
-      <!-- Stats row -->
-      <g transform="translate(48, 110)">
-        <text x="0" y="0" font-family="monospace" font-size="40" font-weight="800" fill="#f97316">{totalHours}</text>
-        <text x="0" y="22" font-family="system-ui, sans-serif" font-size="12" fill="#999">SAAT FOCUS</text>
-      </g>
-      <g transform="translate(220, 110)">
-        <text x="0" y="0" font-family="monospace" font-size="40" font-weight="800" fill="#ffffff">{totalSessions}</text>
-        <text x="0" y="22" font-family="system-ui, sans-serif" font-size="12" fill="#999">OTURUM</text>
-      </g>
-      <g transform="translate(390, 110)">
-        <text x="0" y="0" font-family="monospace" font-size="40" font-weight="800" fill="#ffffff">{doneTasks}/{totalTasks}</text>
-        <text x="0" y="22" font-family="system-ui, sans-serif" font-size="12" fill="#999">GÖREV</text>
-      </g>
+        <!-- Weekly chart -->
+        <div class="sc-chart-label">SON 7 GÜN</div>
+        <div class="sc-chart">
+          {#each chartDays as day}
+            {@const pct = Math.max(6, (day.minutes / chartMax) * 100)}
+            <div class="sc-bar-col">
+              <div class="sc-bar-track">
+                <div class="sc-bar" class:today={day.isToday} style="height: {pct}%"></div>
+              </div>
+              <div class="sc-bar-label">{day.label}</div>
+            </div>
+          {/each}
+        </div>
 
-      <!-- Divider -->
-      <line x1="48" y1="160" x2="552" y2="160" stroke="#2a2a2a" stroke-width="1"/>
-
-      <!-- Weekly chart -->
-      <text x="48" y="190" font-family="system-ui, sans-serif" font-size="12" font-weight="700" fill="#999" letter-spacing="1">SON 7 GÜN</text>
-
-      {#each chartDays as day, i}
-        {@const barH = Math.max(4, (day.minutes / chartMax) * 70)}
-        {@const x = 48 + i * 72}
-        <rect
-          x={x} y={250 - barH} width="36" height={barH} rx="4"
-          fill={day.isToday ? 'url(#accentGrad)' : '#3a3a3a'}
-        />
-        <text x={x + 18} y={272} font-family="monospace" font-size="11" fill="#999" text-anchor="middle">{day.label}</text>
-      {/each}
-
-      <!-- Footer -->
-      <text x="48" y="305" font-family="monospace" font-size="10" fill="#666" letter-spacing="1">velocity-timer.app</text>
-    </svg>
+        <!-- Footer -->
+        <div class="sc-footer">velocity-timer.app</div>
+      </div>
+    </div>
   </div>
 
   <div class="share-actions">
@@ -194,17 +178,107 @@
     display: flex;
     justify-content: center;
     padding: 0.5rem;
-    overflow-x: auto;
   }
   .share-modal-header { margin-bottom: 0.75rem; }
   .share-modal-header h3 { font-size: 1.1rem; font-weight: 800; color: var(--text-primary); margin: 0; }
-  .share-svg {
-    width: 100%;
-    max-width: 600px;
-    height: auto;
+
+  /* Outer box reserves the *scaled* footprint so the modal doesn't
+     leave a giant empty gap below the shrunk card. */
+  .share-card-scaler {
+    position: relative;
+    overflow: hidden;
     border-radius: 20px;
-    display: block;
   }
+
+  /* Fixed 600x320 "design canvas" — always laid out at full size,
+     then visually scaled down to fit the modal via transform.
+     This keeps every font-size/spacing proportionally correct at
+     any screen width, instead of text overlapping when the
+     container shrinks. */
+  .share-card {
+    position: absolute;
+    top: 0; left: 0;
+    transform-origin: top left;
+    border-radius: 20px;
+    padding: 26px 26px 22px;
+    background: linear-gradient(135deg, #1a1a1a 0%, #0d0d0d 100%);
+    border: 1px solid #2a2a2a;
+    box-sizing: border-box;
+    display: flex;
+    flex-direction: column;
+    font-family: system-ui, -apple-system, sans-serif;
+    color: #fff;
+  }
+
+  /* Header */
+  .sc-header { display: flex; align-items: center; gap: 14px; }
+  .sc-avatar {
+    width: 44px; height: 44px; flex-shrink: 0;
+    border-radius: 50%;
+    border: 1.5px solid #f97316;
+    overflow: hidden;
+    display: flex; align-items: center; justify-content: center;
+  }
+  .sc-avatar-img { width: 100%; height: 100%; object-fit: cover; display: block; }
+  .sc-avatar-fallback {
+    width: 100%; height: 100%;
+    display: flex; align-items: center; justify-content: center;
+    background: linear-gradient(90deg, #f97316, #fb923c);
+    color: #0d0d0d;
+    font-family: var(--font-mono, monospace);
+    font-size: 20px; font-weight: 800;
+  }
+  .sc-identity { display: flex; flex-direction: column; gap: 4px; min-width: 0; flex: 1 1 auto; overflow: hidden; }
+  .sc-username { font-size: 22px; font-weight: 800; line-height: 1; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+  .sc-tagline { font-family: var(--font-mono, monospace); font-size: 11px; font-weight: 700; letter-spacing: 2px; color: #f97316; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+
+  .sc-header-right {
+    flex-shrink: 0;
+    display: flex;
+    align-items: center;
+    gap: 12px;
+    margin-left: auto;
+  }
+  .sc-streak {
+    flex-shrink: 0;
+    display: flex; align-items: center; gap: 6px;
+    padding: 6px 14px;
+    border-radius: 15px;
+    background: #2a1a0d;
+    border: 1px solid #f97316;
+    font-family: var(--font-mono, monospace);
+    font-size: 12px; font-weight: 800;
+    color: #fb923c;
+    white-space: nowrap;
+  }
+  .sc-streak.hot {
+    background: linear-gradient(135deg, rgba(251,146,60,0.25), rgba(239,68,68,0.12));
+    border-color: #fb923c;
+    box-shadow: 0 0 14px rgba(251,146,60,0.35);
+  }
+  .sc-logo { flex-shrink: 0; display: flex; }
+
+  /* Stats */
+  .sc-stats { display: flex; gap: 40px; margin-top: 30px; }
+  .sc-stat-value { font-family: var(--font-mono, monospace); font-size: 40px; font-weight: 800; line-height: 1; color: #fff; }
+  .sc-stat-value.accent { color: #f97316; }
+  .sc-stat-label { margin-top: 8px; font-size: 12px; color: #999; }
+
+  /* Divider */
+  .sc-divider { height: 1px; background: #2a2a2a; margin: 22px 0 18px; }
+
+  /* Chart */
+  .sc-chart-label { font-size: 12px; font-weight: 700; letter-spacing: 1px; color: #999; margin-bottom: 14px; }
+  .sc-chart { display: flex; gap: 12px; flex: 1; align-items: flex-end; }
+  .sc-bar-col { flex: 1; display: flex; flex-direction: column; align-items: center; gap: 8px; height: 100%; }
+  .sc-bar-track { width: 100%; flex: 1; display: flex; align-items: flex-end; }
+  .sc-bar { width: 100%; border-radius: 4px; background: #3a3a3a; min-height: 4px; }
+  .sc-bar.today { background: linear-gradient(90deg, #f97316, #fb923c); }
+  .sc-bar-label { font-family: var(--font-mono, monospace); font-size: 11px; color: #999; }
+
+  /* Footer */
+  .sc-footer { font-family: var(--font-mono, monospace); font-size: 10px; letter-spacing: 1px; color: #666; margin-top: 14px; }
+
   .share-actions {
     display: flex;
     justify-content: center;

@@ -25,37 +25,64 @@ function createTimerStore() {
   const saved = loadStats();
   const { subscribe, set, update } = writable({
     mode: 'focus', status: 'idle',
-    remaining: DURATIONS['focus'], elapsed: 0, session: 1,
+    remaining: DURATIONS['focus'], elapsed: 0, session: saved.session ?? 1,
     totalFocusTime: saved.totalFocusTime ?? 0,
     completedSessions: saved.completedSessions ?? 0,
     lastCompleted: null, // { mode, duration } — set on natural completion
+    suggestLongBreak: false, // true right after the 4th focus session completes
   });
   let interval = null;
+  // Wall-clock anchor for the current run — lets us correct for any
+  // drift caused by browsers throttling setInterval in background tabs.
+  let lastTickAt = null;
 
   function saveStats(s) {
     if (!browser) return;
     localStorage.setItem('velocity-timer-stats', JSON.stringify({
       totalFocusTime: s.totalFocusTime,
       completedSessions: s.completedSessions,
+      session: s.session,
     }));
   }
 
-  function clearTick() { if (interval) { clearInterval(interval); interval = null; } }
+  function clearTick() { if (interval) { clearInterval(interval); interval = null; } lastTickAt = null; }
 
-  function tick() {
+  // Apply `n` whole seconds of elapsed time in one go. Used both by the
+  // regular 1s ticker and by the visibility-resync catch-up.
+  function applySeconds(n) {
+    if (n <= 0) return;
     update(s => {
-      if (s.status !== 'running') { clearTick(); return s; }
-      const remaining = s.remaining - 1;
-      const elapsed   = s.elapsed + 1;
-      // ALL modes count as focused time
-      const totalFocusTime = s.totalFocusTime + 1;
+      if (s.status !== 'running') return s;
+
+      let remaining = s.remaining - n;
+      let elapsed = s.elapsed + n;
+      let totalFocusTime = s.totalFocusTime + n;
 
       if (remaining <= 0) {
+        // Clamp elapsed/focus time so a long background gap doesn't
+        // over-count past the session's actual duration.
+        const overshoot = -remaining;
+        elapsed -= overshoot;
+        totalFocusTime -= overshoot;
         clearTick();
         const completedSessions = s.completedSessions + 1;
+
+        // Classic Pomodoro cycle: after every 4th completed focus
+        // session, suggest a long break and reset the cycle counter.
+        let session = s.session;
+        let suggestLongBreak = false;
+        if (s.mode === 'focus') {
+          if (session >= 4) {
+            session = 1;
+            suggestLongBreak = true;
+          } else {
+            session += 1;
+          }
+        }
+
         const next = {
           ...s, remaining: 0, elapsed, status: 'completed',
-          totalFocusTime, completedSessions,
+          totalFocusTime, completedSessions, session, suggestLongBreak,
           lastCompleted: { mode: s.mode, duration: elapsed },
         };
         saveStats(next);
@@ -68,9 +95,30 @@ function createTimerStore() {
     });
   }
 
+  function tick() {
+    const now = Date.now();
+    const elapsedMs = lastTickAt ? now - lastTickAt : 1000;
+    // Normally this is ~1 (one second per tick). If the tab was
+    // throttled/suspended, elapsedMs can be much larger — catch up by
+    // applying however many whole seconds actually passed.
+    const wholeSeconds = Math.max(1, Math.round(elapsedMs / 1000));
+    lastTickAt = now;
+    applySeconds(wholeSeconds);
+  }
+
+  // Resync immediately when the tab regains visibility, so the
+  // countdown doesn't visibly "jump" only on the next tick.
+  if (browser) {
+    document.addEventListener('visibilitychange', () => {
+      if (document.visibilityState === 'visible' && interval && lastTickAt) {
+        tick();
+      }
+    });
+  }
+
   return {
     subscribe, DURATIONS, LABELS,
-    start()  { clearTick(); update(s => ({ ...s, status: 'running' })); interval = setInterval(tick, 1000); },
+    start()  { clearTick(); update(s => ({ ...s, status: 'running' })); lastTickAt = Date.now(); interval = setInterval(tick, 1000); },
     pause()  { clearTick(); update(s => { const next = { ...s, status: 'paused' }; saveStats(next); return next; }); },
     reset()  { clearTick(); update(s => { const next = { ...s, status: 'idle', remaining: DURATIONS[s.mode], elapsed: 0 }; saveStats(next); return next; }); },
     setMode(mode) {
@@ -87,6 +135,7 @@ function createTimerStore() {
       update(s => s.mode === mode ? { ...s, remaining: secs, elapsed: 0, status: 'idle' } : s);
     },
     clearLastCompleted() { update(s => ({ ...s, lastCompleted: null })); },
+    clearLongBreakSuggestion() { update(s => ({ ...s, suggestLongBreak: false })); },
     destroy() { clearTick(); },
   };
 }

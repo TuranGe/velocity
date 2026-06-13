@@ -5,6 +5,7 @@
   import { auth, fetchMySessions } from '$lib/stores/api';
   import { tasks } from '$lib/stores/tasks';
   import { t } from '$lib/stores/i18n';
+  import { computeWeeklyStats } from '$lib/utils/weeklyStats';
 
   const STORAGE_KEY = 'velocity-weekly-summary-seen';
 
@@ -41,22 +42,23 @@
     const seenKey = `${STORAGE_KEY}:${user.id}`;
     if (localStorage.getItem(seenKey) === weekKey) return;
 
+    let daily = [];
+    let remoteStreak = 0;
     try {
       const data = await fetchMySessions();
-      const daily = data.daily || [];
-      streak = data.currentStreak || 0;
-
-      totalMinutes = Math.round(daily.reduce((sum, d) => sum + (d.total_seconds || 0), 0) / 60);
-      totalSessions = daily.reduce((sum, d) => sum + (d.sessions || 0), 0);
-      activeDays = daily.filter(d => d.sessions > 0).length;
-      bestDayMinutes = Math.round(Math.max(0, ...daily.map(d => d.total_seconds || 0)) / 60);
+      daily = data.daily || [];
+      remoteStreak = data.currentStreak || 0;
     } catch {
       // No remote data available — still show a lightweight local summary
     }
 
-    // Tasks completed in the last 7 days (from local task store)
-    const weekAgo = Date.now() - 7 * 86400000;
-    tasksCompleted = $tasks.filter(tk => tk.done && (tk.doneAt ?? tk.createdAt ?? 0) >= weekAgo).length;
+    const stats = computeWeeklyStats(daily, $tasks, remoteStreak);
+    totalMinutes = stats.totalMinutes;
+    totalSessions = stats.totalSessions;
+    activeDays = stats.activeDays;
+    bestDayMinutes = stats.bestDayMinutes;
+    tasksCompleted = stats.tasksCompleted;
+    streak = stats.currentStreak;
 
     loading = false;
     show = true;
@@ -99,8 +101,8 @@
   </div>
 
   {#if streak > 0}
-    <div class="ws-streak">
-      🔥 <strong>{streak}</strong> {$t('weekly_summary_streak')}
+    <div class="ws-streak" class:streak-hot={streak >= 7}>
+      <span class="streak-flame">🔥</span> <strong>{streak}</strong> {$t('weekly_summary_streak')}
     </div>
   {/if}
 
@@ -176,6 +178,26 @@
     padding: 0.6rem 0.9rem;
   }
   .ws-streak strong, .ws-best strong { color: var(--text-primary); }
+
+  .ws-streak.streak-hot {
+    background: linear-gradient(135deg, rgba(251,146,60,0.2), rgba(239,68,68,0.08));
+    border: 1px solid rgba(251,146,60,0.5);
+    animation: ws-streak-glow 2s ease-in-out infinite;
+  }
+  .streak-flame {
+    display: inline-block;
+    animation: ws-streak-flicker 1.6s ease-in-out infinite;
+  }
+  @keyframes ws-streak-flicker {
+    0%, 100% { transform: scale(1) rotate(0deg); }
+    25%      { transform: scale(1.12) rotate(-4deg); }
+    50%      { transform: scale(0.95) rotate(3deg); }
+    75%      { transform: scale(1.08) rotate(-2deg); }
+  }
+  @keyframes ws-streak-glow {
+    0%, 100% { box-shadow: 0 0 0px rgba(251,146,60,0); }
+    50%      { box-shadow: 0 0 14px rgba(251,146,60,0.35); }
+  }
 
   .btn-soft {
     width: 100%;

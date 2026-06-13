@@ -1,7 +1,16 @@
 <script>
   import { fade, scale } from 'svelte/transition';
+  import { browser } from '$app/environment';
 
   export let show = false;
+
+  function portal(node) {
+    if (!browser) return {};
+    document.body.appendChild(node);
+    return {
+      destroy() { if (node.parentNode) node.parentNode.removeChild(node); }
+    };
+  }
 
   const SHORTCUT_GROUPS = [
     {
@@ -41,7 +50,7 @@
 <svelte:window on:keydown={handleKeydown} />
 
 {#if show}
-  <div class="shortcuts-backdrop" on:click={handleBackdropClick} transition:fade={{ duration: 150 }}>
+  <div use:portal class="shortcuts-backdrop" on:click={handleBackdropClick} transition:fade={{ duration: 150 }}>
     <div class="shortcuts-modal" transition:scale={{ duration: 200, start: 0.95, opacity: 0 }}>
       <div class="shortcuts-header">
         <h2>⌨️ Klavye Kısayolları</h2>
