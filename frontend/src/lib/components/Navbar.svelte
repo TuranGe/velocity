@@ -107,6 +107,8 @@
   </button>
 
   {#if showMobileMenu}
+    <!-- svelte-ignore a11y-click-events-have-key-events -->
+    <!-- svelte-ignore a11y-no-static-element-interactions -->
     <div class="mobile-menu" on:click={() => showMobileMenu = false}>
       {#each links as link}
         <a href={link.href} class="mobile-nav-link" class:active={$page.url.pathname === link.href}>

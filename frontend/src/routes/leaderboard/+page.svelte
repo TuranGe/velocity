@@ -1,11 +1,10 @@
 <script>
-  import { onMount } from 'svelte';
+  import { onMount, onDestroy } from 'svelte';
   import { fetchLeaderboard } from '$lib/stores/api';
   import { auth } from '$lib/stores/api';
   import { t } from '$lib/stores/i18n';
   import UserAvatar from '$lib/components/UserAvatar.svelte';
-  import { initGSAP } from '$lib/utils/gsap';
-  import { fly, fade } from 'svelte/transition';
+  import { fly } from 'svelte/transition';
 
   let rows = [];
   let contextRows = [];
@@ -13,7 +12,13 @@
   let period = 'week';
   let search = '';
   let searchTimer;
-  let gsap;
+
+  // Cache: stores results per period key so switching back is instant
+  const cache = new Map();
+  const CACHE_TTL = 60_000; // 1 minute
+
+  // AbortController: cancels in-flight requests when period/search changes fast
+  let abortController = null;
 
   const PERIODS = [
     { id: 'week',    label: 'period_week' },
@@ -23,27 +28,45 @@
 
   const RANK_ICONS = { 1:'🥇', 2:'🥈', 3:'🥉' };
 
-  onMount(async () => {
-    ({ gsap } = await initGSAP());
-    await load();
-  });
+  onMount(() => load());
+  onDestroy(() => abortController?.abort());
 
   async function load() {
+    const cacheKey = `${period}:${search}`;
+    const cached = cache.get(cacheKey);
+    if (cached && Date.now() - cached.ts < CACHE_TTL) {
+      rows = cached.rows;
+      contextRows = cached.contextRows;
+      return;
+    }
+
+    // Cancel any in-flight request
+    abortController?.abort();
+    abortController = new AbortController();
+
     loading = true;
     try {
-      const data = await fetchLeaderboard({ period, limit: 15, search });
+      const data = await fetchLeaderboard({ period, limit: 15, search, signal: abortController.signal });
       rows = data.leaderboard;
       contextRows = data.context || [];
-    } catch(e) { rows = []; contextRows = []; }
+      cache.set(cacheKey, { rows, contextRows, ts: Date.now() });
+    } catch(e) {
+      if (e.name === 'AbortError') return; // request was intentionally cancelled
+      if (rows.length === 0) { rows = []; contextRows = []; }
+    }
     finally { loading = false; }
+  }
+
+  function onPeriodChange(p) {
+    period = p;
+    cache.delete(`${period}:${search}`); // bust cache for fresh data on explicit change
+    load();
   }
 
   function onSearchInput() {
     clearTimeout(searchTimer);
     searchTimer = setTimeout(load, 350);
   }
-
-  $: { period; search; }  // reactivity trigger handled by explicit calls
 
   $: user = $auth.user;
   $: myRank = rows.findIndex(r => r.id === user?.id);
@@ -82,7 +105,7 @@
     <div class="period-tabs">
       {#each PERIODS as p}
         <button class="period-tab font-mono" class:active={period===p.id}
-          on:click={() => { period=p.id; load(); }}>{$t(p.label)}</button>
+          on:click={() => onPeriodChange(p.id)}>{$t(p.label)}</button>
       {/each}
     </div>
 
@@ -96,7 +119,7 @@
   </div>
 
   <!-- Leaderboard table -->
-  <div class="lb-card">
+  <div class="lb-card" class:lb-fetching={loading && rows.length > 0}>
     <div class="lb-header font-mono">
       <span>{$t('col_rank')}</span>
       <span>{$t('col_user')}</span>
@@ -104,7 +127,7 @@
       <span class="text-right">{$t('col_hours')}</span>
     </div>
 
-    {#if loading}
+    {#if loading && rows.length === 0}
       {#each Array(8) as _}
         <div class="lb-skeleton"></div>
       {/each}
@@ -185,9 +208,9 @@
   .controls { display: flex; align-items: center; justify-content: space-between; flex-wrap: wrap; gap: 0.75rem; }
 
   .period-tabs { display: flex; background: var(--bg-surface); border: 1px solid var(--border-subtle); border-radius: var(--radius-md); overflow: hidden; }
-  .period-tab { font-size: 0.65rem; font-weight: 700; letter-spacing: 0.08em; text-transform: uppercase; padding: 0.4rem 0.9rem; border: none; background: transparent; color: var(--text-tertiary); transition: all var(--transition-fast); cursor: pointer; }
-  .period-tab.active { background: var(--accent); color: white; }
-  .period-tab:hover:not(.active) { color: var(--text-secondary); }
+  .period-tab { font-size: 0.65rem; font-weight: 700; letter-spacing: 0.08em; text-transform: uppercase; padding: 0.4rem 0.9rem; border: none; background: transparent; color: var(--text-tertiary); transition: color 200ms ease, background 200ms ease, box-shadow 200ms ease; cursor: pointer; }
+  .period-tab.active { background: var(--accent); color: white; box-shadow: inset 0 0 12px rgba(255,255,255,0.08); }
+  .period-tab:hover:not(.active) { color: var(--text-secondary); background: var(--bg-elevated); }
 
   .search-wrap { position: relative; }
   .search-icon { position: absolute; left: 0.75rem; top: 50%; transform: translateY(-50%); color: var(--text-tertiary); pointer-events: none; }
@@ -196,11 +219,12 @@
   .search-clear { position: absolute; right: 0.6rem; top: 50%; transform: translateY(-50%); background: none; border: none; color: var(--text-tertiary); font-size: 0.7rem; cursor: pointer; }
   .search-clear:hover { color: var(--text-primary); }
 
-  .lb-card { background: var(--bg-surface); border: 1px solid var(--border-subtle); border-radius: var(--radius-xl); overflow: hidden; }
+  .lb-card { background: var(--bg-surface); border: 1px solid var(--border-subtle); border-radius: var(--radius-xl); overflow: hidden; transition: opacity 0.15s ease; }
+  .lb-card.lb-fetching { opacity: 0.5; pointer-events: none; }
 
   .lb-header { display: grid; grid-template-columns: 48px 1fr 80px 80px; padding: 0.65rem 1.25rem; font-size: 0.6rem; letter-spacing: 0.15em; text-transform: uppercase; color: var(--text-tertiary); border-bottom: 1px solid var(--border-subtle); }
 
-  .lb-row { display: grid; grid-template-columns: 48px 1fr 80px 80px; align-items: center; padding: 0.85rem 1.25rem; border-bottom: 1px solid var(--border-subtle); transition: background var(--transition-fast); }
+  .lb-row { display: grid; grid-template-columns: 48px 1fr 80px 80px; align-items: center; padding: 0.85rem 1.25rem; min-height: 56px; border-bottom: 1px solid var(--border-subtle); transition: background var(--transition-fast); }
   .lb-row:last-child { border-bottom: none; }
   .lb-row:hover { background: var(--accent-subtle); }
   .lb-row.gold { background: rgba(251,191,36,0.06); }

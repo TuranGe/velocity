@@ -12,45 +12,47 @@ function createAuthStore() {
     token: storedToken || null,
   });
 
-  function persist(user, token) {
+  function persist(user, token, refreshToken) {
     if (!browser) return;
     if (user)  localStorage.setItem('velocity-user',  JSON.stringify(user));
     else       localStorage.removeItem('velocity-user');
     if (token) localStorage.setItem('velocity-token', token);
     else       localStorage.removeItem('velocity-token');
+    if (refreshToken) localStorage.setItem('velocity-refresh-token', refreshToken);
+    else if (refreshToken === null) localStorage.removeItem('velocity-refresh-token');
   }
 
   return {
     subscribe,
     async register(username, email, password) {
       const data = await apiFetch('/api/auth/register', { method:'POST', body: JSON.stringify({username,email,password}) });
-      persist(data.user, data.token);
+      persist(data.user, data.token, data.refreshToken);
       set({ user: data.user, token: data.token });
       return data.user;
     },
     async login(email, password) {
       const data = await apiFetch('/api/auth/login', { method:'POST', body: JSON.stringify({email,password}) });
-      persist(data.user, data.token);
+      persist(data.user, data.token, data.refreshToken);
       set({ user: data.user, token: data.token });
       return data.user;
     },
     async oauth(provider, provider_id, email, username, profile_image) {
       const data = await apiFetch('/api/auth/oauth', { method:'POST', body: JSON.stringify({provider,provider_id,email,username,profile_image}) });
-      persist(data.user, data.token);
+      persist(data.user, data.token, data.refreshToken);
       set({ user: data.user, token: data.token });
       return data.user;
     },
     async updateProfile(updates) {
       const token = get({ subscribe }).token;
       const data = await apiFetch('/api/auth/me', { method:'PATCH', body: JSON.stringify(updates), token });
-      persist(data.user, data.token);
+      persist(data.user, data.token, undefined); // don't touch refreshToken
       set({ user: data.user, token: data.token });
       return data.user;
     },
     async linkProvider(provider, provider_id, discord_id) {
       const token = get({ subscribe }).token;
       const data = await apiFetch('/api/auth/link', { method:'POST', body: JSON.stringify({ provider, provider_id, discord_id }), token });
-      persist(data.user, data.token);
+      persist(data.user, data.token, undefined);
       set({ user: data.user, token: data.token });
       return data.user;
     },
@@ -60,17 +62,35 @@ function createAuthStore() {
       try {
         const data = await apiFetch('/api/auth/me', { token });
         if (!data.user) { this.logout(); return; }
-        persist(data.user, token);
+        persist(data.user, token, undefined);
         update(s => ({ ...s, user: data.user }));
       } catch {
-        // Token invalid, expired, or user no longer exists (e.g. stale
-        // localStorage pointing at a deleted account) — log out cleanly
-        // so the UI doesn't claim the user is signed in.
+        // Access token expired — try refresh token before logging out
+        const storedRefresh = browser ? localStorage.getItem('velocity-refresh-token') : null;
+        if (storedRefresh) {
+          try {
+            const refreshData = await apiFetch('/api/auth/refresh', {
+              method: 'POST',
+              body: JSON.stringify({ refreshToken: storedRefresh }),
+            });
+            persist(null, refreshData.token, refreshData.refreshToken);
+            update(s => ({ ...s, token: refreshData.token }));
+            // Now fetch user data with the new token
+            const userData = await apiFetch('/api/auth/me', { token: refreshData.token });
+            if (userData.user) {
+              persist(userData.user, refreshData.token, undefined);
+              update(s => ({ ...s, user: userData.user }));
+            }
+            return;
+          } catch {
+            // Refresh token also expired or invalid
+          }
+        }
         this.logout();
       }
     },
     logout() {
-      persist(null, null);
+      persist(null, null, null);
       set({ user: null, token: null });
       userStats.reset();
     },
@@ -83,10 +103,10 @@ export const currentUser = { subscribe: (fn) => auth.subscribe(s => fn(s.user)) 
 
 // ─── API fetch helper ─────────────────────────────────────────
 export async function apiFetch(path, opts = {}) {
-  const { token, ...fetchOpts } = opts;
+  const { token, signal, ...fetchOpts } = opts;
   const headers = { 'Content-Type': 'application/json', ...(fetchOpts.headers || {}) };
   if (token) headers['Authorization'] = `Bearer ${token}`;
-  const res = await fetch(`${API_URL}${path}`, { ...fetchOpts, headers });
+  const res = await fetch(`${API_URL}${path}`, { ...fetchOpts, headers, signal });
 
   let data = null;
   try { data = await res.json(); } catch { /* empty or non-JSON body */ }
@@ -113,10 +133,10 @@ export function authedFetch(path, opts = {}) {
 }
 
 // ─── Leaderboard ─────────────────────────────────────────────
-export async function fetchLeaderboard({ period = 'week', limit = 15, search = '', offset = 0 } = {}) {
+export async function fetchLeaderboard({ period = 'week', limit = 15, search = '', offset = 0, signal } = {}) {
   let url = `/api/leaderboard?period=${period}&limit=${limit}&offset=${offset}`;
   if (search) url += `&search=${encodeURIComponent(search)}`;
-  return apiFetch(url, { token: getToken() });
+  return apiFetch(url, { token: getToken(), signal });
 }
 
 // ─── Sessions ────────────────────────────────────────────────

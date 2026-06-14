@@ -10,16 +10,26 @@ if (!SECRET) {
   process.exit(1);
 }
 
+// Access token: short-lived (7 days). Refresh token: long-lived (30 days),
+// stored only in the response so the client can persist it.
 export function signToken(user) {
   if (!user?.id) throw new Error('Cannot sign token: user not found');
-  return jwt.sign({ id: user.id, username: user.username }, SECRET, { expiresIn: '30d' });
+  return jwt.sign({ id: user.id, username: user.username }, SECRET, { expiresIn: '7d' });
+}
+
+export function signRefreshToken(user) {
+  if (!user?.id) throw new Error('Cannot sign refresh token: user not found');
+  return jwt.sign({ id: user.id, type: 'refresh' }, SECRET, { expiresIn: '30d' });
 }
 
 export function auth(req, res, next) {
   const h = req.headers.authorization;
   if (!h?.startsWith('Bearer ')) return res.status(401).json({ error: 'Unauthorized' });
   try {
-    req.user = jwt.verify(h.slice(7), SECRET);
+    const payload = jwt.verify(h.slice(7), SECRET);
+    // Reject refresh tokens used as access tokens
+    if (payload.type === 'refresh') return res.status(401).json({ error: 'Invalid token type' });
+    req.user = payload;
     next();
   } catch {
     res.status(401).json({ error: 'Invalid token' });
@@ -29,7 +39,10 @@ export function auth(req, res, next) {
 export function optionalAuth(req, res, next) {
   const h = req.headers.authorization;
   if (h?.startsWith('Bearer ')) {
-    try { req.user = jwt.verify(h.slice(7), SECRET); } catch {}
+    try {
+      const payload = jwt.verify(h.slice(7), SECRET);
+      if (payload.type !== 'refresh') req.user = payload;
+    } catch {}
   }
   next();
 }

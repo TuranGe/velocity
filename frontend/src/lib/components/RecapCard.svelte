@@ -20,6 +20,7 @@
   export let currentStreak = 0;
   export let periodLabel = ''; // e.g. "SON 7 GÜN" or "GEÇEN HAFTA" — defaults via i18n
   export let filenameSuffix = 'stats';
+  export let hideButton = false;
 
   const CARD_W = 600;
   const CARD_H = 320;
@@ -46,6 +47,17 @@
     if (wrapEl) resizeObserver.observe(wrapEl);
   });
   onDestroy(() => resizeObserver?.disconnect());
+
+  export async function getCanvas() {
+    if (!cardEl) return null;
+    try {
+      const html2canvas = (await import('html2canvas')).default;
+      return await html2canvas(cardEl, {
+        scale: 2, width: CARD_W, height: CARD_H,
+        backgroundColor: null, useCORS: true, logging: false,
+      });
+    } catch { return null; }
+  }
 
   export async function downloadCard() {
     if (!cardEl) return;
@@ -161,7 +173,7 @@
   </div>
 </div>
 
-<div class="recap-actions">
+<div class="recap-actions" class:hidden={hideButton}>
   <button class="btn-download" on:click={downloadCard} disabled={downloading}>
     {downloading ? $t('recap_preparing') : $t('recap_download_png')}
   </button>
@@ -277,6 +289,7 @@
     justify-content: center;
     margin-top: 1.25rem;
   }
+  .recap-actions.hidden { display: none; }
   .btn-download {
     padding: 0.75rem 1.75rem;
     background: var(--accent);

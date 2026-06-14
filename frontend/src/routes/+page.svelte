@@ -1,5 +1,5 @@
 <script>
-  import { onMount } from "svelte";
+  import { onMount, onDestroy } from "svelte";
   import Timer from "$lib/components/Timer.svelte";
   import TaskPanel from "$lib/components/TaskPanel.svelte";
   import ParticleCanvas from "$lib/components/ParticleCanvas.svelte";
@@ -24,6 +24,11 @@
   let lbPeriod = "week";
   let lbLoading = true,
     teamsLoading = true;
+
+  // Cache leaderboard results per period — switching back is instant
+  const lbCache = new Map();
+  const LB_CACHE_TTL = 60_000;
+  let lbAbort = null;
 
   $: user = $auth.user;
 
@@ -72,16 +77,28 @@
   });
 
   async function loadLeaderboard() {
+    const cached = lbCache.get(lbPeriod);
+    if (cached && Date.now() - cached.ts < LB_CACHE_TTL) {
+      leaderboard = cached.data;
+      lbLoading = false;
+      return;
+    }
+    lbAbort?.abort();
+    lbAbort = new AbortController();
     lbLoading = true;
     try {
-      const d = await fetchLeaderboard({ period: lbPeriod, limit: 15 });
+      const d = await fetchLeaderboard({ period: lbPeriod, limit: 15, signal: lbAbort.signal });
       leaderboard = d.leaderboard;
-    } catch {
-      leaderboard = [];
+      lbCache.set(lbPeriod, { data: leaderboard, ts: Date.now() });
+    } catch(e) {
+      if (e.name === 'AbortError') return;
+      if (leaderboard.length === 0) leaderboard = [];
     } finally {
       lbLoading = false;
     }
   }
+
+  onDestroy(() => lbAbort?.abort());
 
   async function loadTeams() {
     teamsLoading = true;
@@ -118,7 +135,10 @@
 
   $: {
     lbPeriod;
-    if (browser) loadLeaderboard();
+    if (browser) {
+      lbCache.delete(lbPeriod); // bust cache so tab switch always fetches fresh
+      loadLeaderboard();
+    }
   }
 
   const features = [
@@ -247,13 +267,13 @@
           {/each}
         </div>
 
-        <div class="lb-wrap">
+        <div class="lb-wrap" class:lb-fetching={lbLoading && leaderboard.length > 0}>
           <div class="lb-col-header font-mono">
             <span>#</span><span>User</span><span class="tr">Sessions</span><span
               class="tr">Hours</span
             >
           </div>
-          {#if lbLoading}
+          {#if lbLoading && leaderboard.length === 0}
             {#each Array(5) as _}<div class="lb-skel"></div>{/each}
           {:else}
             {#each leaderboard as row, i (row.id)}
@@ -588,21 +608,28 @@
     border: 1px solid transparent;
     color: var(--text-tertiary);
     background: transparent;
-    transition: all var(--transition-fast);
+    transition: color 200ms ease, background 200ms ease, border-color 200ms ease, box-shadow 200ms ease;
     cursor: pointer;
   }
   .period-tab.active {
     border-color: var(--accent);
     color: var(--accent);
     background: var(--accent-subtle);
+    box-shadow: 0 0 8px var(--orange-glow-sm);
   }
   .period-tab:hover:not(.active) {
     color: var(--text-secondary);
+    background: var(--bg-elevated);
   }
 
   /* Leaderboard */
   .lb-wrap {
     padding: 0.75rem 0 0;
+    transition: opacity 0.15s ease;
+  }
+  .lb-wrap.lb-fetching {
+    opacity: 0.5;
+    pointer-events: none;
   }
   .lb-col-header {
     display: grid;
@@ -619,6 +646,7 @@
     grid-template-columns: 36px 1fr 70px 60px;
     align-items: center;
     padding: 0.6rem 1.25rem;
+    min-height: 46px;
     border-bottom: 1px solid var(--border-subtle);
     transition: background var(--transition-fast);
   }
@@ -683,7 +711,7 @@
     text-decoration: underline;
   }
   .lb-skel {
-    height: 38px;
+    height: 46px;
     border-bottom: 1px solid var(--border-subtle);
     animation: sk 1.5s ease-in-out infinite;
     background: linear-gradient(

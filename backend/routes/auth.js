@@ -2,9 +2,12 @@ import { Router } from 'express';
 import bcrypt from 'bcryptjs';
 import { randomUUID } from 'crypto';
 import { query, run } from '../db.js';
-import { signToken, auth, optionalAuth, cleanUsername } from '../middleware.js';
+import { signToken, signRefreshToken, auth, optionalAuth, cleanUsername } from '../middleware.js';
+import jwt from 'jsonwebtoken';
 
 const router = Router();
+
+const SECRET = process.env.JWT_SECRET;
 
 // Register with email+password
 router.post('/register', async (req, res) => {
@@ -27,7 +30,7 @@ router.post('/register', async (req, res) => {
     [id, name, email.toLowerCase(), hash, 'local']);
 
   const user = query('SELECT id,username,email,profile_image,bio,provider,discord_id,created_at FROM users WHERE id=?', [id])[0];
-  res.json({ user, token: signToken(user) });
+  res.json({ user, token: signToken(user), refreshToken: signRefreshToken(user) });
 });
 
 // Login with email+password
@@ -42,7 +45,22 @@ router.post('/login', async (req, res) => {
   if (!ok) return res.status(401).json({ error: 'Invalid credentials' });
 
   const safe = { id: user.id, username: user.username, email: user.email, profile_image: user.profile_image, bio: user.bio, provider: user.provider, discord_id: user.discord_id, created_at: user.created_at };
-  res.json({ user: safe, token: signToken(safe) });
+  res.json({ user: safe, token: signToken(safe), refreshToken: signRefreshToken(safe) });
+});
+
+// Refresh access token using a valid refresh token
+router.post('/refresh', (req, res) => {
+  const { refreshToken } = req.body;
+  if (!refreshToken) return res.status(400).json({ error: 'refreshToken required' });
+  try {
+    const payload = jwt.verify(refreshToken, SECRET);
+    if (payload.type !== 'refresh') return res.status(401).json({ error: 'Invalid token type' });
+    const user = query('SELECT id,username,email,profile_image,bio,provider,discord_id,created_at FROM users WHERE id=?', [payload.id])[0];
+    if (!user) return res.status(401).json({ error: 'User not found' });
+    res.json({ token: signToken(user), refreshToken: signRefreshToken(user) });
+  } catch {
+    res.status(401).json({ error: 'Invalid or expired refresh token' });
+  }
 });
 
 // OAuth callback (Discord) — frontend sends provider token, we upsert user
@@ -71,7 +89,7 @@ router.post('/oauth', async (req, res) => {
   }
 
   const safe = { id: user.id, username: user.username, email: user.email, profile_image: user.profile_image, bio: user.bio, provider: user.provider, discord_id: user.discord_id || (provider === 'discord' ? provider_id : null), created_at: user.created_at };
-  res.json({ user: safe, token: signToken(safe) });
+  res.json({ user: safe, token: signToken(safe), refreshToken: signRefreshToken(safe) });
 });
 
 // Discord OAuth code exchange

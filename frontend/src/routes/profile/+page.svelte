@@ -813,7 +813,7 @@
 
   .edit-row { display: flex; gap: 0.5rem; }
 
-  .btn-edit, .btn-cancel, .btn-save {
+  .btn-edit, .btn-cancel, .btn-save, .btn-share {
     display: inline-flex;
     align-items: center;
     gap: 0.4rem;
@@ -871,7 +871,7 @@
   }
 
   .panel-title {
-    font-size: 1.05rem;
+    font-size: 0.95rem;
     font-weight: 700;
     color: var(--text-primary);
     letter-spacing: -0.02em;
