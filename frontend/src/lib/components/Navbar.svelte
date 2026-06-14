@@ -3,15 +3,15 @@
   import { page } from '$app/stores';
   import ThemeToggle from './ThemeToggle.svelte';
   import SoundSettings from './SoundSettings.svelte';
+  import NavAuthModal from './NavAuthModal.svelte';
   import { magneticHover, initGSAP } from '$lib/utils/gsap';
   import { createAmbientEngine } from '$lib/utils/ambientAudio';
-  import { t, lang, toggleLang } from '$lib/stores/i18n';
+  import { t, toggleLang } from '$lib/stores/i18n';
   import { auth } from '$lib/stores/api';
   import { audio } from '$lib/stores/audio';
   import { toast } from '$lib/stores/toast';
   import { timer } from '$lib/stores/timer';
-  import Modal from './Modal.svelte';
-  import { fly, fade } from 'svelte/transition';
+  import { fly } from 'svelte/transition';
 
   let logoEl, navEl, cleanup;
 
@@ -20,32 +20,18 @@
   let currentTrack = 'lofi';
   const ambient = createAmbientEngine();
 
-  // Sound settings modal
   let showSoundSettings = false;
   let showMobileMenu = false;
-
-  // Auth modal state
   let showAuthModal = false;
-  let authMode = 'login'; // 'login' | 'register'
-  let email = '', password = '', username = '', confirmPassword = '';
-  let authLoading = false;
-  let authError = '';
-
-  // Profile dropdown
+  let authMode = 'login';
   let showProfile = false;
-
-  // OAuth config (these should be environment variables in production)
-  const GOOGLE_CLIENT_ID = import.meta.env.VITE_GOOGLE_CLIENT_ID || '';
-  const GOOGLE_REDIRECT  = import.meta.env.VITE_GOOGLE_REDIRECT  || (typeof window !== 'undefined' ? window.location.origin + '/auth/google' : 'http://localhost:5173/auth/google');
-  const DISCORD_CLIENT_ID = import.meta.env.VITE_DISCORD_CLIENT_ID || '';
-  const DISCORD_REDIRECT = import.meta.env.VITE_DISCORD_REDIRECT || 'http://localhost:5173/auth/discord';
 
   $: user = $auth.user;
   $: links = [
-    { href: '/',            label: $t('timer')    },
-    { href: '/teams',       label: 'Teams'        },
-    { href: '/leaderboard', label: 'Leaderboard'  },
-    { href: '/stats',       label: $t('stats')    },
+    { href: '/',            label: $t('timer')   },
+    { href: '/teams',       label: 'Teams'       },
+    { href: '/leaderboard', label: 'Leaderboard' },
+    { href: '/stats',       label: $t('stats')   },
   ];
 
   onMount(async () => {
@@ -54,7 +40,6 @@
     cleanup = magneticHover(logoEl, 0.3);
   });
 
-  // Keep engine volume in sync with the audio store
   audio.subscribe(audioState => {
     if (musicPlaying) ambient.setVolume(audioState.volume);
   });
@@ -63,14 +48,8 @@
 
   // ── Music ──────────────────────────────────────────────────
   function toggleMusic() {
-    if (musicPlaying) {
-      musicPlaying = false;
-      ambient.stop();
-    } else {
-      if (!$audio.enabled) return;
-      musicPlaying = true;
-      ambient.start(currentTrack, $audio.volume);
-    }
+    if (musicPlaying) { musicPlaying = false; ambient.stop(); }
+    else { if (!$audio.enabled) return; musicPlaying = true; ambient.start(currentTrack, $audio.volume); }
   }
 
   function handleTrackChange(trackId) {
@@ -78,72 +57,25 @@
     if (musicPlaying) ambient.changeTrack(trackId, $audio.volume);
   }
 
-  // Auto-switch music track based on timer mode
   let lastTimerMode = '';
   const MODE_TRACKS = { 'focus': 'lofi', 'short-break': 'nature', 'long-break': 'nature', 'custom': 'lofi' };
   $: if ($timer.mode !== lastTimerMode) {
     lastTimerMode = $timer.mode;
     const targetTrack = MODE_TRACKS[$timer.mode] || 'lofi';
-    if (musicPlaying && currentTrack !== targetTrack) {
-      handleTrackChange(targetTrack);
-    }
+    if (musicPlaying && currentTrack !== targetTrack) handleTrackChange(targetTrack);
   }
 
   // ── Auth ───────────────────────────────────────────────────
   function openAuth(mode = 'login') {
-    authMode = mode; authError = ''; email = ''; password = ''; username = ''; confirmPassword = '';
-    showAuthModal = true; showProfile = false;
-  }
-
-  async function handleAuth() {
-    authError = '';
-    if (authMode === 'register') {
-      if (!username.trim() || !email.trim() || !password) { authError = 'All fields required'; return; }
-      if (password !== confirmPassword) { authError = 'Passwords do not match'; return; }
-    } else {
-      if (!email.trim() || !password) { authError = 'Email and password required'; return; }
-    }
-    authLoading = true;
-    try {
-      if (authMode === 'register') {
-        await auth.register(username.trim(), email.trim(), password);
-        toast.success(`Welcome, ${username}! 🎉`);
-      } else {
-        const u = await auth.login(email.trim(), password);
-        toast.success(`Welcome back, ${u.username}!`);
-      }
-      showAuthModal = false;
-    } catch(e) { authError = e.message; }
-    finally { authLoading = false; }
+    authMode = mode;
+    showAuthModal = true;
+    showProfile = false;
   }
 
   function handleLogout() {
     auth.logout();
     showProfile = false;
     toast.info('Logged out');
-  }
-
-  // ── OAuth ───────────────────────────────────────────────────
-  function handleGoogleOAuth() {
-    if (!GOOGLE_CLIENT_ID) {
-      toast.error('Google OAuth not configured');
-      return;
-    }
-    const redirectUri = encodeURIComponent(GOOGLE_REDIRECT);
-    const scope = encodeURIComponent('openid email profile');
-    const clientId = encodeURIComponent(GOOGLE_CLIENT_ID);
-    window.location.href = `https://accounts.google.com/o/oauth2/v2/auth?client_id=${clientId}&redirect_uri=${redirectUri}&response_type=code&scope=${scope}`;
-  }
-
-  function handleDiscordOAuth() {
-    if (!DISCORD_CLIENT_ID) {
-      toast.error('Discord OAuth not configured');
-      return;
-    }
-    const redirectUri = encodeURIComponent(DISCORD_REDIRECT);
-    const clientId = encodeURIComponent(DISCORD_CLIENT_ID);
-    const scope = encodeURIComponent('identify email');
-    window.location.href = `https://discord.com/api/oauth2/authorize?client_id=${clientId}&redirect_uri=${redirectUri}&response_type=code&scope=${scope}`;
   }
 </script>
 
@@ -228,47 +160,7 @@
 <SoundSettings bind:show={showSoundSettings} {musicPlaying} {toggleMusic} {currentTrack} onTrackChange={handleTrackChange} />
 
 <!-- Auth Modal -->
-<Modal show={showAuthModal} on:close={() => showAuthModal = false}>
-  <button class="m-close" on:click={() => showAuthModal = false}>✕</button>
-
-  <div class="auth-tabs">
-    <button class="auth-tab" class:active={authMode==='login'}    on:click={() => { authMode='login';    authError=''; }}>Sign In</button>
-    <button class="auth-tab" class:active={authMode==='register'} on:click={() => { authMode='register'; authError=''; }}>Register</button>
-  </div>
-
-  {#if authMode === 'register'}
-    <input class="m-input" bind:value={username} placeholder="Username" maxlength="20"
-      on:keydown={e=>e.key==='Enter'&&handleAuth()} />
-  {/if}
-
-  <input class="m-input" bind:value={email} type="email" placeholder="Email"
-    on:keydown={e=>e.key==='Enter'&&handleAuth()} />
-  <input class="m-input" bind:value={password} type="password" placeholder="Password"
-    on:keydown={e=>e.key==='Enter'&&handleAuth()} />
-
-  {#if authMode === 'register'}
-    <input class="m-input" bind:value={confirmPassword} type="password" placeholder="Confirm password"
-      on:keydown={e=>e.key==='Enter'&&handleAuth()} />
-  {/if}
-
-  {#if authError}<p class="auth-error">{authError}</p>{/if}
-
-  <button class="m-btn-primary" on:click={handleAuth} disabled={authLoading}>
-    {authLoading ? '…' : authMode === 'login' ? 'Sign In' : 'Create Account'}
-  </button>
-
-  <div class="oauth-divider"><span>or continue with</span></div>
-  <div class="oauth-btns">
-    <button class="oauth-btn" on:click={handleGoogleOAuth}>
-      <svg width="16" height="16" viewBox="0 0 24 24"><path fill="#4285F4" d="M22.56 12.25c0-.78-.07-1.53-.2-2.25H12v4.26h5.92c-.26 1.37-1.04 2.53-2.21 3.31v2.77h3.57c2.08-1.92 3.28-4.74 3.28-8.09z"/><path fill="#34A853" d="M12 23c2.97 0 5.46-.98 7.28-2.66l-3.57-2.77c-.98.66-2.23 1.06-3.71 1.06-2.86 0-5.29-1.93-6.16-4.53H2.18v2.84C3.99 20.53 7.7 23 12 23z"/><path fill="#FBBC05" d="M5.84 14.09c-.22-.66-.35-1.36-.35-2.09s.13-1.43.35-2.09V7.07H2.18C1.43 8.55 1 10.22 1 12s.43 3.45 1.18 4.93l3.66-2.84z"/><path fill="#EA4335" d="M12 5.38c1.62 0 3.06.56 4.21 1.64l3.15-3.15C17.45 2.09 14.97 1 12 1 7.7 1 3.99 3.47 2.18 7.07l3.66 2.84c.87-2.6 3.3-4.53 6.16-4.53z"/></svg>
-      Google
-    </button>
-    <button class="oauth-btn" on:click={handleDiscordOAuth}>
-      <svg width="16" height="16" viewBox="0 0 24 24" fill="#5865F2"><path d="M20.317 4.492c-1.53-.69-3.17-1.2-4.885-1.49a.075.075 0 0 0-.079.036c-.21.369-.444.85-.608 1.23a18.566 18.566 0 0 0-5.487 0 12.36 12.36 0 0 0-.617-1.23A.077.077 0 0 0 8.562 3c-1.714.29-3.354.8-4.885 1.491a.07.07 0 0 0-.032.027C.533 9.093-.32 13.555.099 17.961a.08.08 0 0 0 .031.055 20.03 20.03 0 0 0 5.993 2.98.078.078 0 0 0 .084-.026c.462-.62.874-1.275 1.226-1.963.021-.04.001-.088-.041-.104a13.201 13.201 0 0 1-1.872-.878.075.075 0 0 1-.008-.125c.126-.093.252-.19.372-.287a.075.075 0 0 1 .078-.01c3.927 1.764 8.18 1.764 12.061 0a.075.075 0 0 1 .079.009c.12.098.245.195.372.288a.075.075 0 0 1-.006.125c-.598.344-1.22.635-1.873.877a.075.075 0 0 0-.041.105c.36.687.772 1.341 1.225 1.962a.077.077 0 0 0 .084.028 19.963 19.963 0 0 0 6.002-2.981.076.076 0 0 0 .032-.054c.5-5.094-.838-9.52-3.549-13.442a.06.06 0 0 0-.031-.028z"/></svg>
-      Discord
-    </button>
-  </div>
-</Modal>
+<NavAuthModal bind:show={showAuthModal} initialMode={authMode} on:close={() => showAuthModal = false} />
 
 </div><!-- /navbar-wrapper -->
 
@@ -374,55 +266,6 @@
     transition: background var(--transition-fast), box-shadow var(--transition-fast);
   }
   .auth-btn:hover { background: var(--accent-hover); box-shadow: 0 0 12px var(--accent-glow); }
-
-  /* Auth modal */
-  .m-close {
-    position: absolute; top: 1rem; right: 1rem; width: 26px; height: 26px;
-    border-radius: 50%; background: transparent; border: 1px solid var(--border-base);
-    color: var(--text-tertiary); font-size: 0.7rem; display: flex; align-items: center; justify-content: center;
-    cursor: pointer; transition: color var(--transition-fast);
-  }
-  .m-close:hover { color: var(--text-primary); }
-
-  .auth-tabs { display: flex; border-bottom: 1px solid var(--border-subtle); }
-  .auth-tab {
-    flex: 1; padding: 0.6rem; font-family: var(--font-mono); font-size: 0.7rem;
-    font-weight: 700; letter-spacing: 0.1em; text-transform: uppercase;
-    background: transparent; border: none; color: var(--text-tertiary);
-    cursor: pointer; transition: color var(--transition-fast);
-    border-bottom: 2px solid transparent;
-  }
-  .auth-tab.active { color: var(--accent); border-bottom-color: var(--accent); }
-  .auth-tab:hover:not(.active) { color: var(--text-secondary); }
-
-  .m-input {
-    width: 100%; background: var(--bg-elevated); border: 1px solid var(--border-base);
-    border-radius: var(--radius-md); padding: 0.7rem 1rem;
-    font-size: 0.875rem; color: var(--text-primary); outline: none;
-    transition: border-color var(--transition-fast);
-  }
-  .m-input:focus { border-color: var(--accent); }
-  .auth-error { font-size: 0.75rem; color: #ef4444; font-family: var(--font-mono); }
-  .m-btn-primary {
-    width: 100%; padding: 0.75rem; background: var(--accent); color: white;
-    border: none; border-radius: var(--radius-md); font-family: var(--font-mono);
-    font-size: 0.75rem; font-weight: 700; letter-spacing: 0.1em; text-transform: uppercase;
-    cursor: pointer; transition: background var(--transition-fast);
-  }
-  .m-btn-primary:hover:not(:disabled) { background: var(--accent-hover); }
-  .m-btn-primary:disabled { opacity: 0.5; cursor: not-allowed; }
-
-  .oauth-divider { display: flex; align-items: center; gap: 0.75rem; }
-  .oauth-divider::before, .oauth-divider::after { content: ''; flex: 1; height: 1px; background: var(--border-subtle); }
-  .oauth-divider span { font-size: 0.65rem; color: var(--text-tertiary); white-space: nowrap; }
-  .oauth-btns { display: grid; grid-template-columns: 1fr 1fr; gap: 0.5rem; }
-  .oauth-btn {
-    display: flex; align-items: center; justify-content: center; gap: 0.5rem;
-    padding: 0.6rem; border: 1px solid var(--border-base); border-radius: var(--radius-md);
-    background: transparent; color: var(--text-secondary); font-size: 0.78rem;
-    cursor: pointer; transition: all var(--transition-fast);
-  }
-  .oauth-btn:hover { border-color: var(--accent); background: var(--accent-subtle); color: var(--text-primary); }
 
   @media (max-width: 768px) {
     .navbar { padding: 0.875rem 1rem; gap: 0.75rem; }

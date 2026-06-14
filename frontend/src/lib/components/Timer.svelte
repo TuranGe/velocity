@@ -3,7 +3,7 @@
   import { timer, progress, timeDisplay, LABELS, DURATIONS } from '$lib/stores/timer';
   import ProgressRing from './ProgressRing.svelte';
   import { initGSAP, magneticHover, glitchText } from '$lib/utils/gsap';
-  import { recordSession, auth } from '$lib/stores/api';
+  import { recordSession, auth, userStats } from '$lib/stores/api';
   import { tasks } from '$lib/stores/tasks';
   import { notifyTimerComplete, notifyLongBreakSuggestion, isNotificationSupported, getPermission, requestNotificationPermission } from '$lib/utils/notifications';
   import { toast } from '$lib/stores/toast';
@@ -102,7 +102,10 @@
     timer.clearLastCompleted();
     // Record session for all modes
     if ($auth.user) {
-      recordSession(mode, duration).catch(() => {});
+      userStats.optimisticIncrement(duration);
+      recordSession(mode, duration)
+        .then(() => userStats.refresh())
+        .catch(() => {});
     }
     // Add elapsed time to all selected tasks — any mode counts
     tasks.addTime(duration);
@@ -339,12 +342,12 @@
 
   <div class="timer-stats">
     <div class="stat-item">
-      <span class="stat-value font-mono">{$timer.completedSessions}</span>
+      <span class="stat-value font-mono">{$auth.user ? $userStats.totalSessions : $timer.completedSessions}</span>
       <span class="stat-label">Sessions</span>
     </div>
     <div class="stat-divider"></div>
     <div class="stat-item">
-      <span class="stat-value font-mono">{Math.floor($timer.totalFocusTime / 60)}</span>
+      <span class="stat-value font-mono">{$auth.user ? $userStats.totalMinutes : Math.floor($timer.totalFocusTime / 60)}</span>
       <span class="stat-label">Minutes focused</span>
     </div>
   </div>

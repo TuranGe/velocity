@@ -72,6 +72,7 @@ function createAuthStore() {
     logout() {
       persist(null, null);
       set({ user: null, token: null });
+      userStats.reset();
     },
   };
 }
@@ -125,6 +126,65 @@ export async function recordSession(mode = 'focus', duration = 1500) {
 export async function fetchMySessions() {
   return authedFetch('/api/sessions/me');
 }
+// Previous calendar week (Mon-Sun), used by the Monday recap modal/card.
+export async function fetchLastWeekStats() {
+  return authedFetch('/api/sessions/last-week');
+}
+
+// ─── Canonical user stats (DB-backed) ─────────────────────────
+// Single source of truth for "total sessions" / "total focus time" for
+// logged-in users. Several pages used to independently fall back to
+// localStorage (Math.max(remote, local)), which meant a manually-edited
+// localStorage value could permanently inflate the displayed numbers
+// beyond what's actually recorded in the database. Every page now reads
+// from this store instead.
+function createUserStatsStore() {
+  const { subscribe, set, update } = writable({
+    loaded: false,
+    totalSessions: 0,
+    totalMinutes: 0,
+    daily: [],
+    currentStreak: 0,
+  });
+
+  return {
+    subscribe,
+    async refresh() {
+      if (!get(auth).user) {
+        set({ loaded: false, totalSessions: 0, totalMinutes: 0, daily: [], currentStreak: 0 });
+        return;
+      }
+      try {
+        const data = await fetchMySessions();
+        set({
+          loaded: true,
+          totalSessions: data.stats?.total_sessions ?? 0,
+          totalMinutes: Math.floor((data.stats?.total_seconds ?? 0) / 60),
+          daily: data.daily || [],
+          currentStreak: data.currentStreak || 0,
+        });
+      } catch {
+        // Leave previous (possibly empty) state — don't fall back to
+        // localStorage, that's the whole point.
+      }
+    },
+    // Bump the displayed numbers immediately after a session completes,
+    // before the network round-trip to refresh() resolves — purely
+    // cosmetic, refresh() will reconcile with the real DB value shortly
+    // after and this never persists anywhere.
+    optimisticIncrement(durationSeconds) {
+      update(s => ({
+        ...s,
+        totalSessions: s.totalSessions + 1,
+        totalMinutes: s.totalMinutes + Math.floor(durationSeconds / 60),
+      }));
+    },
+    reset() {
+      set({ loaded: false, totalSessions: 0, totalMinutes: 0, daily: [], currentStreak: 0 });
+    },
+  };
+}
+export const userStats = createUserStatsStore();
 
 // ─── Tasks ───────────────────────────────────────────────────
 export async function fetchRemoteTasks(type) {

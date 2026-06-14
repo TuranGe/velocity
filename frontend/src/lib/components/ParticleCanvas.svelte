@@ -62,11 +62,23 @@
       ctx.restore();
     }
 
-    animFrame = requestAnimationFrame(draw);
+    animFrame = document.visibilityState !== 'hidden'
+      ? requestAnimationFrame(draw)
+      : null;
   }
 
   // Only react to timer store in browser
   $: if (browser) isRunning = $timer.status === 'running';
+
+  function handleVisibility() {
+    if (document.visibilityState === 'visible') {
+      // Resume: kick off a fresh frame if we don't already have one running
+      if (!animFrame) draw();
+    } else {
+      // Pause: cancel the pending frame; draw() won't reschedule itself
+      if (animFrame) { cancelAnimationFrame(animFrame); animFrame = null; }
+    }
+  }
 
   onMount(() => {
     if (!browser) return;
@@ -74,6 +86,7 @@
     resize();
     draw();
     window.addEventListener('resize', resize);
+    document.addEventListener('visibilitychange', handleVisibility);
     canvas.style.transition = 'opacity 2s ease';
     requestAnimationFrame(() => { canvas.style.opacity = '1'; });
   });
@@ -82,6 +95,7 @@
     if (!browser) return;
     if (animFrame) cancelAnimationFrame(animFrame);
     window.removeEventListener('resize', resize);
+    document.removeEventListener('visibilitychange', handleVisibility);
   });
 </script>
 

@@ -47,6 +47,23 @@
 
   $: user = $auth.user;
   $: myRank = rows.findIndex(r => r.id === user?.id);
+
+  // When the user doesn't appear in the top-15, fetch their own numbers
+  // for the current period so the footer "you" row shows accurate data
+  // instead of hardcoded zeros.
+  let myStats = { sessions: 0, total_seconds: 0 };
+
+  async function loadMyStats() {
+    if (!user || myRank !== -1) return;
+    try {
+      const data = await fetchLeaderboard({ period, limit: 1, search: user.username });
+      const me = (data.leaderboard || []).find(r => r.id === user.id);
+      if (me) myStats = { sessions: me.sessions, total_seconds: me.total_seconds };
+      else myStats = { sessions: 0, total_seconds: 0 };
+    } catch { myStats = { sessions: 0, total_seconds: 0 }; }
+  }
+
+  $: if (user && myRank === -1 && !loading) loadMyStats();
 </script>
 
 <svelte:head><title>Leaderboard — Velocity</title></svelte:head>
@@ -144,8 +161,8 @@
             <a class="lb-name" href="/profile">{user.username}</a>
             <span class="you-tag font-mono">{$t('you_label')}</span>
           </div>
-          <span class="lb-val font-mono text-right">0</span>
-          <span class="lb-val font-mono text-right">0.0h</span>
+          <span class="lb-val font-mono text-right">{myStats.sessions}</span>
+          <span class="lb-val font-mono text-right">{(myStats.total_seconds/3600).toFixed(1)}h</span>
         </div>
       {/if}
     {/if}

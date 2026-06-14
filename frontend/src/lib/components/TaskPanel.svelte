@@ -155,7 +155,13 @@
       return;
     }
     const text = newTaskText.trim();
-    const durationMinutes = Math.max(1, newTaskMinutes);
+    const rawMinutes = Number(newTaskMinutes);
+    if (!Number.isFinite(rawMinutes) || rawMinutes <= 0) {
+      newTaskMinutes = 25;
+      gsap?.to(inputEl, { keyframes: [{ x: -6 }, { x: 6 }, { x: -4 }, { x: 4 }, { x: 0 }], duration: 0.4, ease: 'none' });
+      return;
+    }
+    const durationMinutes = Math.max(1, Math.min(480, Math.round(rawMinutes)));
     newTaskText = '';
     newTaskMinutes = 25;
     gsap?.to(addBtnEl, { scale: 0.88, duration: 0.1, yoyo: true, repeat: 1 });
@@ -312,6 +318,10 @@
           min="1"
           max="480"
           on:focus={e => e.target.select()}
+          on:blur={() => {
+            const v = Number(newTaskMinutes);
+            newTaskMinutes = Number.isFinite(v) && v > 0 ? Math.max(1, Math.min(480, Math.round(v))) : 25;
+          }}
         />
         <span class="duration-unit">dk</span>
         <button class="pomo-btn" on:click={() => newTaskMinutes = Math.min(480, newTaskMinutes + 5)}>+</button>

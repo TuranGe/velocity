@@ -1,13 +1,11 @@
 <script>
   import { onMount } from 'svelte';
-  import { timer } from '$lib/stores/timer';
   import { tasks } from '$lib/stores/tasks';
-  import { auth, fetchMySessions } from '$lib/stores/api';
+  import { auth, userStats } from '$lib/stores/api';
   import { t } from '$lib/stores/i18n';
   import { initGSAP, animateCounter } from '$lib/utils/gsap';
 
   let gsap, ScrollTrigger;
-  let remoteStats = null;
 
   onMount(async () => {
     ({ gsap, ScrollTrigger } = await initGSAP());
@@ -41,21 +39,14 @@
       { opacity: 1, scale: 1, y: 0, duration: 0.6, stagger: 0.1, ease: 'power3.out', delay: 0.2 }
     );
 
-    if ($auth.user) {
-      try {
-        const data = await fetchMySessions();
-        remoteStats = data.stats;
-      } catch {}
-    }
+    if ($auth.user) userStats.refresh();
   });
 
-  $: totalMinutes = remoteStats
-    ? Math.max(Math.floor(remoteStats.total_seconds / 60), Math.floor($timer.totalFocusTime / 60))
-    : Math.floor($timer.totalFocusTime / 60);
+  // All numbers come from the database via userStats — never from
+  // localStorage, which a user could edit to inflate their stats.
+  $: totalMinutes = $userStats.totalMinutes;
   $: totalHours = (totalMinutes / 60).toFixed(1);
-  $: totalSessions = remoteStats
-    ? Math.max(remoteStats.total_sessions, $timer.completedSessions)
-    : $timer.completedSessions;
+  $: totalSessions = $userStats.totalSessions;
   $: doneTasks = $tasks.filter(t => t.done).length;
   $: totalTasks = $tasks.length;
   $: completionPct = totalTasks > 0 ? Math.round((doneTasks / totalTasks) * 100) : 0;

@@ -9,8 +9,6 @@
     requestNotificationPermission,
     setNotificationsEnabled,
   } from '$lib/utils/notifications';
-  import { weeklyRecapPreset, RECAP_PRESETS } from '$lib/stores/weeklyRecap';
-
   export let show = false;
   export let musicPlaying = false;
   export let toggleMusic = () => {};
@@ -125,16 +123,6 @@
       </button>
       <p class="setting-hint">Sekme arka plandayken timer bittiğinde ve görev tamamlandığında bildirim alırsın.</p>
     {/if}
-  </div>
-
-  <div class="settings-section">
-    <label class="setting-label" for="recap-day-select">📅 Haftalık Özet</label>
-    <select id="recap-day-select" class="recap-select" value={$weeklyRecapPreset} on:change={(e) => weeklyRecapPreset.setPreset(e.target.value)}>
-      {#each Object.entries(RECAP_PRESETS) as [key, preset]}
-        <option value={key}>{preset.label}</option>
-      {/each}
-    </select>
-    <p class="setting-hint">Haftalık özet modalının hangi gün(ler) gösterileceğini seç.</p>
   </div>
 
   <div class="modal-actions">
@@ -299,23 +287,6 @@
     color: var(--text-tertiary);
     line-height: 1.4;
     margin-top: 0.25rem;
-  }
-
-  .recap-select {
-    width: 100%;
-    padding: 0.65rem 0.9rem;
-    background: var(--bg-elevated);
-    border: 1px solid var(--border-base);
-    border-radius: var(--radius-md);
-    color: var(--text-primary);
-    font-size: 0.82rem;
-    font-weight: 600;
-    cursor: pointer;
-    transition: border-color var(--transition-fast);
-  }
-  .recap-select:hover, .recap-select:focus {
-    border-color: var(--accent);
-    outline: none;
   }
 
   .track-grid {

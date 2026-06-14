@@ -9,7 +9,7 @@
   import WeeklySummaryModal from '$lib/components/WeeklySummaryModal.svelte';
   import { initGSAP } from '$lib/utils/gsap';
   import { lang } from '$lib/stores/i18n';
-  import { auth } from '$lib/stores/api';
+  import { auth, userStats } from '$lib/stores/api';
 
   let gsap;
   let wipeEl;
@@ -50,7 +50,8 @@
       // is invalid/expired or the account no longer exists, this logs
       // the user out so the UI doesn't show a "logged in" state that
       // the backend will reject on the first real request.
-      auth.refresh();
+      await auth.refresh();
+      userStats.refresh();
     }
     ({ gsap } = await initGSAP());
     gsap.fromTo('.layout-content',

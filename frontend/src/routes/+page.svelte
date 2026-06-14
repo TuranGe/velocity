@@ -7,6 +7,7 @@
   import { timer } from "$lib/stores/timer";
   import {
     auth,
+    userStats,
     fetchLeaderboard,
     fetchTeams,
     joinTeamByCode,
@@ -361,7 +362,7 @@
     >
     <span class="footer-session font-mono"
       >{$t("footer_sessions")}
-      <span class="text-accent">{$timer.completedSessions}</span></span
+      <span class="text-accent">{user ? $userStats.totalSessions : $timer.completedSessions}</span></span
     >
   </footer>
 </div>

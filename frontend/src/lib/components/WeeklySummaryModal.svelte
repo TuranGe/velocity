@@ -2,24 +2,21 @@
   import { onMount } from 'svelte';
   import { browser } from '$app/environment';
   import Modal from './Modal.svelte';
-  import { auth, fetchMySessions } from '$lib/stores/api';
-  import { tasks } from '$lib/stores/tasks';
+  import RecapCard from './RecapCard.svelte';
+  import { auth, fetchLastWeekStats } from '$lib/stores/api';
   import { t } from '$lib/stores/i18n';
   import { computeWeeklyStats } from '$lib/utils/weeklyStats';
 
   const STORAGE_KEY = 'velocity-weekly-summary-seen';
 
   let show = false;
-  let loading = true;
-  let totalMinutes = 0;
-  let totalSessions = 0;
-  let activeDays = 0;
-  let tasksCompleted = 0;
-  let streak = 0;
-  let bestDayMinutes = 0;
+  let stats = null;
+  let username = '';
+  let initials = '?';
+  let profileImage = '';
 
-  // ISO week id, e.g. "2026-W24" — used so the modal only appears
-  // once per calendar week, on Saturday or Sunday.
+  // ISO week id, e.g. "2026-W24" — used so the modal only appears once
+  // for the week that just ended (i.e. once per Monday).
   function isoWeekKey(d) {
     const date = new Date(Date.UTC(d.getFullYear(), d.getMonth(), d.getDate()));
     const dayNum = (date.getUTCDay() + 6) % 7; // Mon=0..Sun=6
@@ -35,32 +32,30 @@
     if (!user) return;
 
     const now = new Date();
-    const isWeekend = now.getDay() === 0 || now.getDay() === 6; // Sun or Sat
-    if (!isWeekend) return;
+    // Show on Monday only — a recap of the week that just ended
+    // (last Mon-Sun). Once per calendar week.
+    if (now.getDay() !== 1) return;
 
     const weekKey = isoWeekKey(now);
     const seenKey = `${STORAGE_KEY}:${user.id}`;
     if (localStorage.getItem(seenKey) === weekKey) return;
 
-    let daily = [];
-    let remoteStreak = 0;
     try {
-      const data = await fetchMySessions();
-      daily = data.daily || [];
-      remoteStreak = data.currentStreak || 0;
+      const data = await fetchLastWeekStats();
+      // Don't show an empty recap if the user had zero activity last week.
+      if (!data.stats || data.stats.total_sessions === 0) {
+        localStorage.setItem(seenKey, weekKey);
+        return;
+      }
+      stats = computeWeeklyStats(data.daily, data.tasksCompleted, data.streak, { isPastWeek: true });
     } catch {
-      // No remote data available — still show a lightweight local summary
+      return; // No remote data — don't show a recap we can't back up
     }
 
-    const stats = computeWeeklyStats(daily, $tasks, remoteStreak);
-    totalMinutes = stats.totalMinutes;
-    totalSessions = stats.totalSessions;
-    activeDays = stats.activeDays;
-    bestDayMinutes = stats.bestDayMinutes;
-    tasksCompleted = stats.tasksCompleted;
-    streak = stats.currentStreak;
+    username = user.username;
+    initials = user.username?.slice(0, 1).toUpperCase() ?? '?';
+    profileImage = user.profile_image || '';
 
-    loading = false;
     show = true;
     localStorage.setItem(seenKey, weekKey);
   });
@@ -70,7 +65,8 @@
   }
 </script>
 
-<Modal bind:show on:close={close}>
+{#if stats}
+<Modal bind:show wide on:close={close}>
   <div class="ws-head">
     <div>
       <span class="panel-eyebrow">{$t('weekly_summary_label')}</span>
@@ -79,41 +75,22 @@
     <button class="modal-close" on:click={close}>✕</button>
   </div>
 
-  <p class="ws-sub">{$t('weekly_summary_sub')}</p>
+  <p class="ws-sub">{$t('weekly_summary_sub_monday')}</p>
 
-  <div class="ws-grid">
-    <div class="ws-stat">
-      <span class="ws-num font-mono">{totalSessions}</span>
-      <span class="ws-label">{$t('weekly_summary_sessions')}</span>
-    </div>
-    <div class="ws-stat">
-      <span class="ws-num font-mono">{totalMinutes}</span>
-      <span class="ws-label">{$t('weekly_summary_minutes')}</span>
-    </div>
-    <div class="ws-stat">
-      <span class="ws-num font-mono">{activeDays}/7</span>
-      <span class="ws-label">{$t('weekly_summary_active_days')}</span>
-    </div>
-    <div class="ws-stat">
-      <span class="ws-num font-mono">{tasksCompleted}</span>
-      <span class="ws-label">{$t('weekly_summary_tasks')}</span>
-    </div>
-  </div>
-
-  {#if streak > 0}
-    <div class="ws-streak" class:streak-hot={streak >= 7}>
-      <span class="streak-flame">🔥</span> <strong>{streak}</strong> {$t('weekly_summary_streak')}
-    </div>
-  {/if}
-
-  {#if bestDayMinutes > 0}
-    <div class="ws-best">
-      ⭐ {$t('weekly_summary_best_day')} <strong>{bestDayMinutes} {$t('minutes_focused').toLowerCase()}</strong>
-    </div>
-  {/if}
-
-  <button class="btn-soft ws-close" on:click={close}>{$t('profile_close')}</button>
+  <RecapCard
+    {username}
+    {initials}
+    {profileImage}
+    totalHours={stats.totalHours}
+    totalSessions={stats.totalSessions}
+    doneTasks={stats.tasksCompleted}
+    chartDays={stats.chartDays}
+    currentStreak={stats.currentStreak}
+    periodLabel={$t('recap_last_week')}
+    filenameSuffix="weekly-recap"
+  />
 </Modal>
+{/if}
 
 <style>
   .ws-head {
@@ -121,6 +98,7 @@
     align-items: flex-start;
     justify-content: space-between;
     gap: 1rem;
+    margin-bottom: 0.5rem;
   }
   .panel-eyebrow {
     font-family: var(--font-mono);
@@ -150,69 +128,6 @@
     font-size: 0.85rem;
     color: var(--text-secondary);
     line-height: 1.5;
+    margin-bottom: 0.5rem;
   }
-
-  .ws-grid {
-    display: grid;
-    grid-template-columns: repeat(2, 1fr);
-    gap: 0.75rem;
-  }
-  .ws-stat {
-    background: var(--bg-elevated);
-    border: 1px solid var(--border-subtle);
-    border-radius: var(--radius-md);
-    padding: 0.9rem;
-    display: flex;
-    flex-direction: column;
-    gap: 0.25rem;
-    text-align: center;
-  }
-  .ws-num { font-size: 1.75rem; font-weight: 700; color: var(--accent); line-height: 1; }
-  .ws-label { font-size: 0.65rem; color: var(--text-secondary); text-transform: uppercase; letter-spacing: 0.08em; }
-
-  .ws-streak, .ws-best {
-    font-size: 0.8rem;
-    color: var(--text-secondary);
-    background: var(--accent-subtle);
-    border-radius: var(--radius-md);
-    padding: 0.6rem 0.9rem;
-  }
-  .ws-streak strong, .ws-best strong { color: var(--text-primary); }
-
-  .ws-streak.streak-hot {
-    background: linear-gradient(135deg, rgba(251,146,60,0.2), rgba(239,68,68,0.08));
-    border: 1px solid rgba(251,146,60,0.5);
-    animation: ws-streak-glow 2s ease-in-out infinite;
-  }
-  .streak-flame {
-    display: inline-block;
-    animation: ws-streak-flicker 1.6s ease-in-out infinite;
-  }
-  @keyframes ws-streak-flicker {
-    0%, 100% { transform: scale(1) rotate(0deg); }
-    25%      { transform: scale(1.12) rotate(-4deg); }
-    50%      { transform: scale(0.95) rotate(3deg); }
-    75%      { transform: scale(1.08) rotate(-2deg); }
-  }
-  @keyframes ws-streak-glow {
-    0%, 100% { box-shadow: 0 0 0px rgba(251,146,60,0); }
-    50%      { box-shadow: 0 0 14px rgba(251,146,60,0.35); }
-  }
-
-  .btn-soft {
-    width: 100%;
-    padding: 0.75rem;
-    background: var(--bg-elevated);
-    border: 1px solid var(--border-base);
-    border-radius: var(--radius-md);
-    color: var(--text-primary);
-    font-family: var(--font-mono);
-    font-size: 0.75rem;
-    font-weight: 700;
-    letter-spacing: 0.1em;
-    text-transform: uppercase;
-    cursor: pointer;
-    transition: border-color var(--transition-fast), background var(--transition-fast);
-  }
-  .btn-soft:hover { border-color: var(--accent); background: var(--accent-subtle); }
 </style>

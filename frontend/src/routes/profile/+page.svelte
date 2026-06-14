@@ -4,7 +4,6 @@
   import Modal from '$lib/components/Modal.svelte';
   import ShareCard from '$lib/components/ShareCard.svelte';
   import { auth, fetchMySessions, fetchTeams, API_URL } from '$lib/stores/api';
-  import { timer } from '$lib/stores/timer';
   import { tasks } from '$lib/stores/tasks';
   import { toast } from '$lib/stores/toast';
   import { t } from '$lib/stores/i18n';
@@ -138,13 +137,11 @@
     profileImageUrl = user?.profile_image || getCachedProfilePhoto() || '';
   }
 
-  $: totalMinutes = remoteStats
-    ? Math.max(Math.floor(remoteStats.total_seconds / 60), Math.floor($timer.totalFocusTime / 60))
-    : Math.floor($timer.totalFocusTime / 60);
+  // All-time totals come exclusively from the database — never merged
+  // with local timer/localStorage values, which a user could edit.
+  $: totalMinutes = remoteStats ? Math.floor(remoteStats.total_seconds / 60) : 0;
   $: totalHours = (totalMinutes / 60).toFixed(1);
-  $: totalSessions = remoteStats
-    ? Math.max(remoteStats.total_sessions, $timer.completedSessions)
-    : $timer.completedSessions;
+  $: totalSessions = remoteStats ? remoteStats.total_sessions : 0;
 
   $: initials = user?.username?.slice(0, 1).toUpperCase() ?? '?';
 
@@ -169,7 +166,11 @@
   // Canonical "last 7 days" numbers — shared with WeeklySummaryModal so
   // the share card (labeled "WEEKLY RECAP") and the weekend recap modal
   // never disagree on what "this week" means.
-  $: weeklyStats = computeWeeklyStats(dailyData, $tasks, currentStreak);
+  $: weeklyTasksDone = (() => {
+    const weekAgo = Date.now() - 7 * 86400000;
+    return $tasks.filter(t => t.done && (t.doneAt ?? t.createdAt ?? 0) >= weekAgo).length;
+  })();
+  $: weeklyStats = computeWeeklyStats(dailyData, weeklyTasksDone, currentStreak);
 
   // Weekly goal tracking
   $: weeklyMinutes = chartDays.reduce((sum, d) => sum + (d.minutes || 0), 0);
