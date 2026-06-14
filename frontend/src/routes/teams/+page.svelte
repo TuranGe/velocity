@@ -209,7 +209,7 @@
   {#if loading}
     <div class="loading-grid">
       {#each Array(6) as _}
-        <div class="team-skeleton"></div>
+        <div class="team-skeleton vel-skel-pulse"></div>
       {/each}
     </div>
   {:else if filtered.length === 0}
@@ -293,6 +293,7 @@
     on:keydown={e => e.key === 'Enter' && handleCreate()} />
 
   <div class="field-group">
+    <!-- svelte-ignore a11y-label-has-associated-control -->
     <label class="field-label font-mono">{$t('teams_label')}</label>
     <div class="cat-grid">
       {#each CATEGORIES.filter(c=>c.id!=='all') as cat}
@@ -304,6 +305,7 @@
   </div>
 
   <div class="field-group">
+    <!-- svelte-ignore a11y-label-has-associated-control -->
     <label class="field-label font-mono">{$t('team_color_label')}</label>
     <div class="color-swatches">
       {#each COLORS as c}
@@ -561,8 +563,8 @@
 
   /* Loading & empty */
   .loading-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(280px, 1fr)); gap: 1.25rem; }
-  .team-skeleton { height: 200px; background: var(--bg-surface); border: 1px solid var(--border-subtle); border-radius: var(--radius-xl); animation: pulse 1.5s ease-in-out infinite; }
-  @keyframes pulse { 0%,100%{opacity:0.5} 50%{opacity:1} }
+  .team-skeleton { height: 200px; background: var(--bg-surface); border: 1px solid var(--border-subtle); border-radius: var(--radius-xl); }
+  /* animation handled by global .vel-skel-pulse in app.css */
   .empty-state { display: flex; flex-direction: column; align-items: center; gap: 1rem; padding: 5rem 2rem; color: var(--text-tertiary); }
   .empty-icon { font-size: 3rem; }
 

@@ -673,7 +673,7 @@
     border: none;
     cursor: pointer;
     padding: 0.3rem 0.6rem;
-    border-radius: var(--radius-sm);
+    border-radius: var(--radius-md);
     transition: color var(--transition-fast), background var(--transition-fast);
   }
   .keyboard-hint:hover {

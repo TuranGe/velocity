@@ -9,31 +9,6 @@ This guide explains how to set up Google and Discord authentication for Velocity
 - Backend server running at `http://localhost:3717` (or your configured URL)
 - Frontend running at `http://localhost:5173` (or your configured URL)
 
-## Google OAuth Setup
-
-### 1. Create Google OAuth Credentials
-
-1. Go to [Google Cloud Console](https://console.cloud.google.com/)
-2. Create a new project or select an existing one
-3. Enable the **Google+ API**:
-   - Go to "APIs & Services" → "Library"
-   - Search for "Google+ API"
-   - Click "Enable"
-4. Create OAuth 2.0 credentials:
-   - Go to "APIs & Services" → "Credentials"
-   - Click "Create Credentials" → "OAuth client ID"
-   - Choose "Web application"
-   - Add authorized redirect URIs:
-     - `http://localhost:5173/auth/google` (for development)
-     - Your production URL
-   - Save and copy your Client ID
-
-### 2. Configure Frontend
-
-Add to your `.env.local`:
-```
-VITE_GOOGLE_CLIENT_ID=your_client_id_here
-```
 
 ## Discord OAuth Setup
 

@@ -28,18 +28,21 @@ function createAuthStore() {
       const data = await apiFetch('/api/auth/register', { method:'POST', body: JSON.stringify({username,email,password}) });
       persist(data.user, data.token, data.refreshToken);
       set({ user: data.user, token: data.token });
+      userStats.refresh();
       return data.user;
     },
     async login(email, password) {
       const data = await apiFetch('/api/auth/login', { method:'POST', body: JSON.stringify({email,password}) });
       persist(data.user, data.token, data.refreshToken);
       set({ user: data.user, token: data.token });
+      userStats.refresh();
       return data.user;
     },
     async oauth(provider, provider_id, email, username, profile_image) {
       const data = await apiFetch('/api/auth/oauth', { method:'POST', body: JSON.stringify({provider,provider_id,email,username,profile_image}) });
       persist(data.user, data.token, data.refreshToken);
       set({ user: data.user, token: data.token });
+      userStats.refresh();
       return data.user;
     },
     async updateProfile(updates) {

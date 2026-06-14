@@ -98,6 +98,13 @@ function createSchema() {
     )
   `);
 
+  // Performance indexes
+  db.run(`CREATE INDEX IF NOT EXISTS idx_sessions_user_id      ON sessions(user_id)`);
+  db.run(`CREATE INDEX IF NOT EXISTS idx_sessions_completed_at ON sessions(completed_at)`);
+  db.run(`CREATE INDEX IF NOT EXISTS idx_sessions_user_time    ON sessions(user_id, completed_at)`);
+  db.run(`CREATE INDEX IF NOT EXISTS idx_tasks_user_id         ON tasks(user_id)`);
+  db.run(`CREATE INDEX IF NOT EXISTS idx_team_members_user_id  ON team_members(user_id)`);
+
   // Migrate: add columns if they don't exist yet (safe on re-run)
   try { db.run(`ALTER TABLE teams ADD COLUMN category TEXT DEFAULT 'general'`); } catch {}
   try { db.run(`ALTER TABLE team_members ADD COLUMN role TEXT DEFAULT 'member'`); } catch {}
@@ -111,7 +118,7 @@ function createSchema() {
   try { db.run(`ALTER TABLE users ADD COLUMN profile_image TEXT`); } catch {}
   try { db.run(`ALTER TABLE users ADD COLUMN bio TEXT DEFAULT ''`); } catch {}
 
-  seedDemoData();
+  if (process.env.SEED_DEMO_DATA !== 'false') seedDemoData();
 }
 
 function seedDemoData() {
@@ -180,6 +187,12 @@ export function persistDB() {
   writeFileSync(DB_PATH, JSON.stringify({ data: Array.from(db.export()) }));
 }
 
+let _persistTimer = null;
+function schedulePersist() {
+  clearTimeout(_persistTimer);
+  _persistTimer = setTimeout(persistDB, 500);
+}
+
 export function query(sql, params = []) {
   const result = db.exec(sql, params);
   if (!result[0]) return [];
@@ -189,7 +202,7 @@ export function query(sql, params = []) {
 
 export function run(sql, params = []) {
   db.run(sql, params);
-  persistDB();
+  schedulePersist();
 }
 
 export { db };

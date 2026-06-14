@@ -76,11 +76,12 @@ router.post('/oauth', async (req, res) => {
       ? name + '_' + Math.random().toString(36).slice(2,5) : name;
     const id = randomUUID();
     const discordId = provider === 'discord' ? provider_id : null;
+    const safeImage = (profile_image && isAllowedImageUrl(profile_image)) ? profile_image : null;
     run('INSERT INTO users (id, username, email, profile_image, provider, provider_id, discord_id) VALUES (?,?,?,?,?,?,?)',
-      [id, safeName, email?.toLowerCase() || null, profile_image || null, provider, provider_id, discordId]);
+      [id, safeName, email?.toLowerCase() || null, safeImage, provider, provider_id, discordId]);
     user = query('SELECT * FROM users WHERE id=?', [id])[0];
   } else {
-    if (profile_image) run('UPDATE users SET profile_image=? WHERE id=?', [profile_image, user.id]);
+    if (profile_image && isAllowedImageUrl(profile_image)) run('UPDATE users SET profile_image=? WHERE id=?', [profile_image, user.id]);
     if (!user.provider_id) {
       run('UPDATE users SET provider=?, provider_id=? WHERE id=?', [provider, provider_id, user.id]);
       if (provider === 'discord') run('UPDATE users SET discord_id=? WHERE id=?', [provider_id, user.id]);
@@ -139,6 +140,26 @@ router.get('/me', auth, (req, res) => {
   res.json({ user });
 });
 
+const ALLOWED_IMAGE_HOSTS = [
+  'cdn.discordapp.com',
+  'lh3.googleusercontent.com',
+  'api.dicebear.com',
+  'avatars.githubusercontent.com',
+  'pbs.twimg.com',
+];
+
+function isAllowedImageUrl(url) {
+  if (!url) return true;
+  // Local file uploads come as data URLs — always allow
+  if (url.startsWith('data:image/')) return true;
+  try {
+    const { protocol, hostname } = new URL(url);
+    if (protocol !== 'https:') return false;
+    return ALLOWED_IMAGE_HOSTS.some(h => hostname === h || hostname.endsWith('.' + h));
+  } catch { return false; }
+}
+
+
 // Update profile
 router.patch('/me', auth, async (req, res) => {
   const { username, profile_image, bio, password, currentPassword } = req.body;
@@ -151,7 +172,11 @@ router.patch('/me', auth, async (req, res) => {
       return res.status(409).json({ error: 'Username already taken' });
     run('UPDATE users SET username=? WHERE id=?', [name, userId]);
   }
-  if (profile_image !== undefined) run('UPDATE users SET profile_image=? WHERE id=?', [profile_image || null, userId]);
+  if (profile_image !== undefined) {
+    if (profile_image && !isAllowedImageUrl(profile_image))
+      return res.status(400).json({ error: 'Invalid profile image URL' });
+    run('UPDATE users SET profile_image=? WHERE id=?', [profile_image || null, userId]);
+  }
   if (bio !== undefined) run('UPDATE users SET bio=? WHERE id=?', [bio || '', userId]);
   if (password) {
     if (!currentPassword) return res.status(400).json({ error: 'currentPassword required to change password' });

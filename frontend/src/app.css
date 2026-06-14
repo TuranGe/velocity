@@ -112,6 +112,38 @@ body {
   position: relative;
 }
 
+/* Suppress theme transitions during initial load to avoid FOUT */
+.no-theme-transition *,
+.no-theme-transition *::before,
+.no-theme-transition *::after {
+  transition: none !important;
+}
+
+/* ─── Global skeleton shimmer (used by all pages) ─────────── */
+@keyframes vel-shimmer {
+  0%   { background-position: 200% 0; }
+  100% { background-position: -200% 0; }
+}
+.vel-skel {
+  background: linear-gradient(
+    90deg,
+    var(--bg-surface) 25%,
+    var(--bg-elevated) 50%,
+    var(--bg-surface) 75%
+  );
+  background-size: 200% 100%;
+  animation: vel-shimmer 1.4s ease-in-out infinite;
+  border-bottom: 1px solid var(--border-subtle);
+}
+
+@keyframes vel-pulse {
+  0%, 100% { opacity: 0.45; }
+  50%       { opacity: 0.9; }
+}
+.vel-skel-pulse {
+  animation: vel-pulse 1.4s ease-in-out infinite;
+}
+
 
 
 a {

@@ -274,7 +274,7 @@
             >
           </div>
           {#if lbLoading && leaderboard.length === 0}
-            {#each Array(5) as _}<div class="lb-skel"></div>{/each}
+            {#each Array(5) as _}<div class="lb-skel vel-skel"></div>{/each}
           {:else}
             {#each leaderboard as row, i (row.id)}
               <div
@@ -329,7 +329,7 @@
         </div>
 
         {#if teamsLoading}
-          {#each Array(5) as _}<div class="team-skel"></div>{/each}
+          {#each Array(5) as _}<div class="team-skel vel-skel"></div>{/each}
         {:else}
           <div class="teams-list">
             {#each teams as team, i (team.id)}
@@ -712,24 +712,8 @@
   }
   .lb-skel {
     height: 46px;
-    border-bottom: 1px solid var(--border-subtle);
-    animation: sk 1.5s ease-in-out infinite;
-    background: linear-gradient(
-      90deg,
-      var(--bg-surface) 25%,
-      var(--bg-elevated) 50%,
-      var(--bg-surface) 75%
-    );
-    background-size: 200% 100%;
   }
-  @keyframes sk {
-    0% {
-      background-position: 200% 0;
-    }
-    100% {
-      background-position: -200% 0;
-    }
-  }
+  @keyframes sk { 0%{background-position:200% 0} 100%{background-position:-200% 0} }
 
   /* Teams list */
   .teams-list {
@@ -834,16 +818,8 @@
   }
   .team-skel {
     height: 52px;
-    border-bottom: 1px solid var(--border-subtle);
-    animation: sk 1.5s ease-in-out infinite;
-    background: linear-gradient(
-      90deg,
-      var(--bg-surface) 25%,
-      var(--bg-elevated) 50%,
-      var(--bg-surface) 75%
-    );
-    background-size: 200% 100%;
   }
+
 
   /* Footer */
   .site-footer {

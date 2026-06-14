@@ -65,7 +65,10 @@
 
   function onSearchInput() {
     clearTimeout(searchTimer);
-    searchTimer = setTimeout(load, 350);
+    searchTimer = setTimeout(() => {
+      cache.delete(`${period}:${search}`);
+      load();
+    }, 350);
   }
 
   $: user = $auth.user;
@@ -129,7 +132,7 @@
 
     {#if loading && rows.length === 0}
       {#each Array(8) as _}
-        <div class="lb-skeleton"></div>
+        <div class="lb-skeleton vel-skel"></div>
       {/each}
     {:else if search && contextRows.length > 0}
       <!-- Contextual view when searching -->
@@ -242,8 +245,8 @@
   .you-tag { font-size: 0.5rem; padding: 1px 5px; border-radius: 4px; color: var(--accent); border: 1px solid var(--accent); background: var(--accent-subtle); letter-spacing: 0.1em; text-transform: uppercase; flex-shrink: 0; }
   .match-tag { font-size: 0.5rem; padding: 1px 5px; border-radius: 4px; color: #22c55e; border: 1px solid #22c55e; letter-spacing: 0.1em; text-transform: uppercase; flex-shrink: 0; }
 
-  .lb-skeleton { height: 56px; border-bottom: 1px solid var(--border-subtle); background: linear-gradient(90deg, var(--bg-surface) 25%, var(--bg-elevated) 50%, var(--bg-surface) 75%); background-size: 200% 100%; animation: shimmer 1.5s infinite; }
-  @keyframes shimmer { 0%{background-position:200% 0} 100%{background-position:-200% 0} }
+  .lb-skeleton { height: 56px; }
+  /* vel-shimmer keyframe is defined globally in app.css */
 
   .lb-empty { padding: 3rem; text-align: center; color: var(--text-tertiary); font-size: 0.85rem; }
 

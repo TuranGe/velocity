@@ -13,6 +13,7 @@ router.get('/', optionalAuth, (req, res) => {
   const { category, limit } = req.query;
   const filter = category ? `WHERE t.category=?` : '';
   const params = category ? [category] : [];
+  const safeLimit = limit ? Math.max(1, Math.min(100, parseInt(limit) || 20)) : null;
   const teams = query(`
     SELECT t.*, COUNT(tm.user_id) as member_count, u.username as creator_name
     FROM teams t
@@ -20,8 +21,8 @@ router.get('/', optionalAuth, (req, res) => {
     LEFT JOIN users u ON u.id=t.created_by
     ${filter} GROUP BY t.id
     ORDER BY member_count DESC, t.created_at DESC
-    ${limit ? `LIMIT ${parseInt(limit)}` : ''}
-  `, params);
+    ${safeLimit ? 'LIMIT ?' : ''}
+  `, safeLimit ? [...params, safeLimit] : params);
 
   const teamsWithMembers = teams.map(team => {
     const members = query(`

@@ -38,9 +38,9 @@ function createTimerStore() {
 
   function saveStats(s) {
     if (!browser) return;
+    // Only persist the pomodoro cycle counter (1–4) — session counts and
+    // focus time are the DB's source of truth via userStats store.
     localStorage.setItem('velocity-timer-stats', JSON.stringify({
-      totalFocusTime: s.totalFocusTime,
-      completedSessions: s.completedSessions,
       session: s.session,
     }));
   }

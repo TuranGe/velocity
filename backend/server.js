@@ -3,7 +3,7 @@ import express from 'express';
 import cors    from 'cors';
 import helmet  from 'helmet';
 import { rateLimit } from 'express-rate-limit';
-import { initDB } from './db.js';
+import { initDB, persistDB } from './db.js';
 import { optionalAuth } from './middleware.js';
 import { query } from './db.js';
 
@@ -38,7 +38,17 @@ app.use(cors({
   credentials: true,
 }));
 
-app.use(express.json({ limit: '8mb' }));
+// ─── Body parsing ────────────────────────────────────────────
+// Global limit is intentionally tight. Only the profile-update
+// endpoint needs a large limit (base64 profile photos).
+const jsonSmall = express.json({ limit: '32kb' });
+const jsonLarge = express.json({ limit: '8mb' });
+
+app.use((req, res, next) => {
+  // Profile update is the only endpoint that sends base64 images
+  if (req.method === 'PATCH' && req.path === '/api/auth/me') return jsonLarge(req, res, next);
+  return jsonSmall(req, res, next);
+});
 
 // ─── Rate limiting ────────────────────────────────────────────
 // Global: 200 req / 15 min per IP
@@ -107,6 +117,15 @@ app.use((err, req, res, _next) => {
 });
 
 app.use((req, res) => res.status(404).json({ error: 'Not found' }));
+
+// ─── Graceful shutdown — flush any pending DB write ──────────
+function shutdown(signal) {
+  console.log(`\n[${signal}] Flushing DB and exiting...`);
+  persistDB();
+  process.exit(0);
+}
+process.on('SIGTERM', () => shutdown('SIGTERM'));
+process.on('SIGINT',  () => shutdown('SIGINT'));
 
 // ─── Start ───────────────────────────────────────────────────
 await initDB();
