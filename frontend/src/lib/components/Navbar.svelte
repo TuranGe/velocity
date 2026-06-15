@@ -52,9 +52,10 @@
     else { if (!$audio.enabled) return; musicPlaying = true; ambient.start(currentTrack, $audio.volume); }
   }
 
-  function handleTrackChange(trackId) {
-    currentTrack = trackId;
-    if (musicPlaying) ambient.changeTrack(trackId, $audio.volume);
+  function handleTrackChange(trackIdOrVideoId) {
+    currentTrack = trackIdOrVideoId;
+    if (musicPlaying) ambient.changeTrack(trackIdOrVideoId, $audio.volume);
+    else { musicPlaying = true; ambient.start(trackIdOrVideoId, $audio.volume); }
   }
 
   let lastTimerMode = '';

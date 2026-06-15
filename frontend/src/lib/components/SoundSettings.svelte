@@ -2,6 +2,7 @@
   import Modal from './Modal.svelte';
   import { audio } from '$lib/stores/audio';
   import { t } from '$lib/stores/i18n';
+  import { YOUTUBE_TRACKS, extractVideoId } from '$lib/utils/ambientAudio';
   import {
     notificationsEnabled,
     isNotificationSupported,
@@ -9,18 +10,30 @@
     requestNotificationPermission,
     setNotificationsEnabled,
   } from '$lib/utils/notifications';
+
   export let show = false;
   export let musicPlaying = false;
   export let toggleMusic = () => {};
-
   export let currentTrack = 'lofi';
   export let onTrackChange = (t) => {};
 
-  const TRACKS = [
-    { id: 'lofi', label: '☕ Lo-fi Loop' },
-    { id: 'nature', label: '🌧️ Rainy Chords' },
-    { id: 'deepwork', label: '🧠 Deep Focus' },
-  ];
+  const TRACKS = Object.entries(YOUTUBE_TRACKS).map(([id, t]) => ({ id, label: t.label }));
+
+  let customUrl = '';
+  let customError = '';
+
+  function handleCustomPlay() {
+    customError = '';
+    const videoId = extractVideoId(customUrl);
+    if (!videoId) { customError = 'Geçerli bir YouTube linki gir.'; return; }
+    onTrackChange(videoId); // video ID'yi doğrudan geçir
+    if (!musicPlaying) toggleMusic();
+    customUrl = '';
+  }
+
+  function handleCustomKey(e) {
+    if (e.key === 'Enter') handleCustomPlay();
+  }
 
   let notifSupported = isNotificationSupported();
   let notifPermission = notifSupported ? getPermission() : 'unsupported';
@@ -28,7 +41,6 @@
   async function handleNotifToggle() {
     if (!notifSupported) return;
     if (notifPermission === 'granted') {
-      // Can't programmatically revoke; just toggle our own preference
       setNotificationsEnabled(!$notificationsEnabled);
     } else {
       const result = await requestNotificationPermission();
@@ -48,6 +60,7 @@
   <h3 class="modal-title font-mono">🔊 Ses Ayarları</h3>
   
   <div class="settings-section">
+    <!-- svelte-ignore a11y-label-has-associated-control -->
     <label class="setting-label">Müzik Sesi</label>
     <div class="volume-control">
       <span class="volume-icon">🔇</span>
@@ -68,6 +81,7 @@
   </div>
 
   <div class="settings-section">
+    <!-- svelte-ignore a11y-label-has-associated-control -->
     <label class="setting-label">Ortam Sesi</label>
     <div class="track-grid">
       {#each TRACKS as track}
@@ -80,6 +94,24 @@
         </button>
       {/each}
     </div>
+  </div>
+
+  <div class="settings-section">
+    <!-- svelte-ignore a11y-label-has-associated-control -->
+    <label class="setting-label">🎵 YouTube'dan Müzik</label>
+    <div class="custom-url-row">
+      <input
+        class="custom-url-input"
+        type="text"
+        placeholder="YouTube linki yapıştır..."
+        bind:value={customUrl}
+        on:keydown={handleCustomKey}
+      />
+      <button class="custom-play-btn" on:click={handleCustomPlay}>▶</button>
+    </div>
+    {#if customError}
+      <p class="custom-error">{customError}</p>
+    {/if}
   </div>
 
   <div class="settings-section">
@@ -102,6 +134,7 @@
   </div>
 
   <div class="settings-section">
+    <!-- svelte-ignore a11y-label-has-associated-control -->
     <label class="setting-label">🔔 Bildirimler</label>
     {#if !notifSupported}
       <p class="setting-hint">Tarayıcın bildirimleri desteklemiyor.</p>
@@ -177,13 +210,6 @@
     gap: 0.5rem;
   }
 
-  .setting-label input[type="checkbox"] {
-    width: 18px;
-    height: 18px;
-    cursor: pointer;
-    accent-color: var(--accent);
-  }
-
   .music-toggle {
     display: flex;
     gap: 0.75rem;
@@ -246,6 +272,8 @@
     border-radius: 3px;
     outline: none;
     cursor: pointer;
+    vertical-align: middle;
+    align-self: center;
   }
 
   .volume-slider::-webkit-slider-thumb {
@@ -257,6 +285,7 @@
     background: var(--accent);
     cursor: pointer;
     box-shadow: 0 2px 8px rgba(0, 0, 0, 0.2);
+    margin-top: -5px;
   }
 
   .volume-slider::-moz-range-thumb {
@@ -273,6 +302,12 @@
     background: transparent;
     height: 6px;
     border-radius: 3px;
+  }
+
+  .volume-slider::-moz-range-track {
+    height: 6px;
+    border-radius: 3px;
+    background: transparent;
   }
 
   .volume-value {
@@ -317,6 +352,50 @@
     background: var(--accent-subtle);
     border-color: var(--accent);
     color: var(--accent);
+  }
+
+  .custom-url-row {
+    display: flex;
+    gap: 0.5rem;
+    align-items: center;
+  }
+
+  .custom-url-input {
+    flex: 1;
+    background: var(--bg-elevated);
+    border: 1px solid var(--border-base);
+    border-radius: var(--radius-md);
+    color: var(--text-primary);
+    font-family: var(--font-sans);
+    font-size: 0.8rem;
+    padding: 0.5rem 0.75rem;
+    outline: none;
+    transition: border-color 150ms ease;
+  }
+  .custom-url-input::placeholder { color: var(--text-tertiary); }
+  .custom-url-input:focus { border-color: var(--accent); }
+
+  .custom-play-btn {
+    width: 36px;
+    height: 36px;
+    border-radius: var(--radius-md);
+    background: var(--accent);
+    color: white;
+    border: none;
+    font-size: 0.85rem;
+    cursor: pointer;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    flex-shrink: 0;
+    transition: background 150ms ease;
+  }
+  .custom-play-btn:hover { background: var(--accent-hover); }
+
+  .custom-error {
+    font-size: 0.72rem;
+    color: #f87171;
+    margin-top: 0.35rem;
   }
 
   .modal-actions {
