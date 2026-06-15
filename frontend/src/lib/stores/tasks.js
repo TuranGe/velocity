@@ -9,10 +9,10 @@ function createTasksStore() {
       // Sanitize on load — fix any NaN/undefined that crept in previously
       return raw.map(t => ({
         ...t,
-        spentMinutes:   isFinite(t.spentMinutes)   ? t.spentMinutes   : 0,
+        spentMinutes: isFinite(t.spentMinutes) ? t.spentMinutes : 0,
         durationMinutes: isFinite(t.durationMinutes) ? t.durationMinutes
-                        : isFinite(t.pomodoros)      ? t.pomodoros
-                        : 25,
+          : isFinite(t.pomodoros) ? t.pomodoros
+            : 25,
       }));
     } catch { return []; }
   };

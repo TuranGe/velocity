@@ -71,9 +71,9 @@ router.post('/oauth', async (req, res) => {
   let user = query('SELECT * FROM users WHERE provider=? AND provider_id=?', [provider, provider_id])[0];
   if (!user && email) user = query('SELECT * FROM users WHERE email=?', [email.toLowerCase()])[0];
   if (!user) {
-    const name = cleanUsername(username || `user_${provider_id.slice(0,6)}`);
+    const name = cleanUsername(username || `user_${provider_id.slice(0, 6)}`);
     const safeName = query('SELECT id FROM users WHERE username=?', [name]).length
-      ? name + '_' + Math.random().toString(36).slice(2,5) : name;
+      ? name + '_' + Math.random().toString(36).slice(2, 5) : name;
     const id = randomUUID();
     const discordId = provider === 'discord' ? provider_id : null;
     const safeImage = (profile_image && isAllowedImageUrl(profile_image)) ? profile_image : null;

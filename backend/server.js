@@ -1,22 +1,22 @@
 import 'dotenv/config';
 import express from 'express';
-import cors    from 'cors';
-import helmet  from 'helmet';
+import cors from 'cors';
+import helmet from 'helmet';
 import { rateLimit } from 'express-rate-limit';
 import { initDB, persistDB } from './db.js';
 import { optionalAuth } from './middleware.js';
 import { query } from './db.js';
 
-import authRoutes        from './routes/auth.js';
-import sessionRoutes     from './routes/sessions.js';
-import taskRoutes        from './routes/tasks.js';
-import teamRoutes        from './routes/teams.js';
+import authRoutes from './routes/auth.js';
+import sessionRoutes from './routes/sessions.js';
+import taskRoutes from './routes/tasks.js';
+import teamRoutes from './routes/teams.js';
 import leaderboardRoutes from './routes/leaderboard.js';
 
-const app  = express();
+const app = express();
 const PORT = process.env.PORT || 3717;
 
-const BOT_API_URL    = process.env.BOT_API_URL    || 'http://localhost:4001';
+const BOT_API_URL = process.env.BOT_API_URL || 'http://localhost:4001';
 const BOT_API_SECRET = process.env.BOT_API_SECRET || 'velocity-bot-secret';
 
 // ─── Security headers ─────────────────────────────────────────
@@ -81,11 +81,11 @@ const leaderboardLimiter = rateLimit({
 app.use(globalLimiter);
 
 // ─── Routes ──────────────────────────────────────────────────
-app.use('/api/auth',        authLimiter, authRoutes);
-app.use('/api/users',       authRoutes);   // /api/users/:username/profile lives in authRoutes
-app.use('/api/sessions',    sessionRoutes);
-app.use('/api/tasks',       taskRoutes);
-app.use('/api/teams',       teamRoutes);
+app.use('/api/auth', authLimiter, authRoutes);
+app.use('/api/users', authRoutes);   // /api/users/:username/profile lives in authRoutes
+app.use('/api/sessions', sessionRoutes);
+app.use('/api/tasks', taskRoutes);
+app.use('/api/teams', teamRoutes);
 app.use('/api/leaderboard', leaderboardLimiter, leaderboardRoutes);
 
 // ─── Discord Presence Proxy ──────────────────────────────────
@@ -125,7 +125,7 @@ function shutdown(signal) {
   process.exit(0);
 }
 process.on('SIGTERM', () => shutdown('SIGTERM'));
-process.on('SIGINT',  () => shutdown('SIGINT'));
+process.on('SIGINT', () => shutdown('SIGINT'));
 
 // ─── Start ───────────────────────────────────────────────────
 await initDB();

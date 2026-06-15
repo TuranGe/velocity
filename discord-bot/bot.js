@@ -24,10 +24,10 @@ import express from 'express';
 import cors from 'cors';
 
 // ── Config ────────────────────────────────────────────────────
-const BOT_TOKEN   = process.env.DISCORD_BOT_TOKEN;
-const PORT        = parseInt(process.env.BOT_API_PORT || '4001');
-const API_SECRET  = process.env.BOT_API_SECRET || 'velocity-bot-secret';
-const GUILD_ID    = process.env.GUILD_ID;
+const BOT_TOKEN = process.env.DISCORD_BOT_TOKEN;
+const PORT = parseInt(process.env.BOT_API_PORT || '4001');
+const API_SECRET = process.env.BOT_API_SECRET || 'velocity-bot-secret';
+const GUILD_ID = process.env.GUILD_ID;
 
 if (!BOT_TOKEN) {
   console.error('❌  DISCORD_BOT_TOKEN ortam değişkeni eksik!');
@@ -49,43 +49,43 @@ function serializePresence(presence) {
   const activities = presence.activities || [];
 
   const spotifyAct = activities.find(a => a.name === 'Spotify' && a.type === ActivityType.Listening);
-  const otherActs  = activities.filter(a => a.name !== 'Spotify');
+  const otherActs = activities.filter(a => a.name !== 'Spotify');
 
   const spotify = spotifyAct ? {
-    song:          spotifyAct.details || '',
-    artist:        spotifyAct.state?.replace(/;/g, ',') || '',
-    album:         spotifyAct.assets?.largeText || '',
+    song: spotifyAct.details || '',
+    artist: spotifyAct.state?.replace(/;/g, ',') || '',
+    album: spotifyAct.assets?.largeText || '',
     album_art_url: spotifyAct.assets?.largeImageURL() || '',
-    track_id:      spotifyAct.syncId || null,
-    timestamps:    spotifyAct.timestamps ? {
+    track_id: spotifyAct.syncId || null,
+    timestamps: spotifyAct.timestamps ? {
       start: spotifyAct.timestamps.start?.getTime() || null,
-      end:   spotifyAct.timestamps.end?.getTime()   || null,
+      end: spotifyAct.timestamps.end?.getTime() || null,
     } : null,
   } : null;
 
   const serializedActivities = otherActs.map(a => ({
-    id:             a.id,
-    name:           a.name,
-    type:           a.type,
-    details:        a.details || null,
-    state:          a.state || null,
+    id: a.id,
+    name: a.name,
+    type: a.type,
+    details: a.details || null,
+    state: a.state || null,
     application_id: a.applicationId || null,
     assets: a.assets ? {
       large_image: a.assets.largeImage || null,
-      large_text:  a.assets.largeText  || null,
+      large_text: a.assets.largeText || null,
       small_image: a.assets.smallImage || null,
-      small_text:  a.assets.smallText  || null,
+      small_text: a.assets.smallText || null,
     } : null,
     timestamps: a.timestamps ? {
       start: a.timestamps.start?.getTime() || null,
-      end:   a.timestamps.end?.getTime()   || null,
+      end: a.timestamps.end?.getTime() || null,
     } : null,
   }));
 
   return {
-    discord_status:        status,
+    discord_status: status,
     discord_client_status: clientStatus,
-    listening_to_spotify:  !!spotifyAct,
+    listening_to_spotify: !!spotifyAct,
     spotify,
     activities: serializedActivities,
     cached_at: Date.now(),

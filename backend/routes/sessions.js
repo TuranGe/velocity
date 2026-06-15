@@ -45,7 +45,7 @@ router.get('/me', auth, (req, res) => {
   const daily = [];
   for (let i = 6; i >= 0; i--) {
     const dayStart = now - (i + 1) * 86400;
-    const dayEnd   = now - i * 86400;
+    const dayEnd = now - i * 86400;
     const row = query(
       `SELECT COUNT(*) as sessions, COALESCE(SUM(duration),0) as total_seconds
        FROM sessions WHERE user_id=? AND completed_at > ? AND completed_at <= ?`,
@@ -58,7 +58,7 @@ router.get('/me', auth, (req, res) => {
   let currentStreak = 0;
   for (let i = 0; i <= 365; i++) {
     const dayStart = now - (i + 1) * 86400;
-    const dayEnd   = now - i * 86400;
+    const dayEnd = now - i * 86400;
     const row = query(
       'SELECT COUNT(*) as c FROM sessions WHERE user_id=? AND completed_at > ? AND completed_at <= ?',
       [req.user.id, dayStart, dayEnd]
@@ -79,7 +79,7 @@ router.get('/last-week', auth, (req, res) => {
   const lastMonday = new Date(thisMonday); lastMonday.setUTCDate(thisMonday.getUTCDate() - 7);
 
   const weekStart = Math.floor(lastMonday.getTime() / 1000);
-  const weekEnd   = Math.floor(thisMonday.getTime() / 1000);
+  const weekEnd = Math.floor(thisMonday.getTime() / 1000);
 
   const stats = query(
     `SELECT COUNT(*) as total_sessions, COALESCE(SUM(duration),0) as total_seconds
@@ -87,7 +87,7 @@ router.get('/last-week', auth, (req, res) => {
     [req.user.id, weekStart, weekEnd]
   )[0];
 
-  const DAY_LABELS = ['Mon','Tue','Wed','Thu','Fri','Sat','Sun'];
+  const DAY_LABELS = ['Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat', 'Sun'];
   const daily = [];
   for (let i = 0; i < 7; i++) {
     const dayStart = weekStart + i * 86400;

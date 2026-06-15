@@ -12,7 +12,7 @@ router.get('/', auth, (req, res) => {
   const { type, team_id } = req.query;
   let sql = 'SELECT * FROM tasks WHERE user_id=?';
   const params = [req.user.id];
-  if (type)    { sql += ' AND type=?';    params.push(type); }
+  if (type) { sql += ' AND type=?'; params.push(type); }
   if (team_id) { sql += ' AND team_id=?'; params.push(team_id); }
   sql += ' ORDER BY created_at DESC';
   res.json({ tasks: query(sql, params) });

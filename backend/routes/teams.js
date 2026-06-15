@@ -5,9 +5,9 @@ import { auth, optionalAuth, teamRole } from '../middleware.js';
 
 const router = Router();
 
-const TEAM_CATEGORIES = ['general','productivity','study','work','gaming','social'];
+const TEAM_CATEGORIES = ['general', 'productivity', 'study', 'work', 'gaming', 'social'];
 const MAX_TEAMS_CREATED = 3;
-const MAX_TEAMS_JOINED  = 10;
+const MAX_TEAMS_JOINED = 10;
 
 router.get('/', optionalAuth, (req, res) => {
   const { category, limit } = req.query;
@@ -69,7 +69,7 @@ router.post('/', auth, (req, res) => {
   if (query('SELECT id FROM teams WHERE name=?', [name.trim()]).length)
     return res.status(409).json({ error: 'Team name already taken' });
 
-  const code = name.trim().toUpperCase().replace(/[^A-Z0-9]/g,'').slice(0,5) + Math.random().toString(36).slice(2,5).toUpperCase();
+  const code = name.trim().toUpperCase().replace(/[^A-Z0-9]/g, '').slice(0, 5) + Math.random().toString(36).slice(2, 5).toUpperCase();
   const id = randomUUID();
   run('INSERT INTO teams (id, name, color, category, invite_code, created_by) VALUES (?,?,?,?,?,?)',
     [id, name.trim(), color, category, code, req.user.id]);
@@ -133,7 +133,7 @@ router.delete('/:teamId', auth, teamRole, (req, res) => {
 
 router.patch('/:teamId/members/:userId/role', auth, teamRole, (req, res) => {
   const { role } = req.body;
-  if (!['moderator','member'].includes(role)) return res.status(400).json({ error: 'role must be moderator or member' });
+  if (!['moderator', 'member'].includes(role)) return res.status(400).json({ error: 'role must be moderator or member' });
   if (req.teamRole !== 'leader') return res.status(403).json({ error: 'Only the leader can change roles' });
   if (req.params.userId === req.user.id) return res.status(400).json({ error: 'Cannot change your own role' });
   const target = query('SELECT * FROM team_members WHERE team_id=? AND user_id=?', [req.params.teamId, req.params.userId])[0];

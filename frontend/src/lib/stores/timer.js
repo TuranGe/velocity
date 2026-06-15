@@ -3,17 +3,17 @@ import { browser } from '$app/environment';
 
 // Default durations — mutable, user can override
 export const DURATIONS = {
-  'focus':       25 * 60,
-  'short-break':  5 * 60,
-  'long-break':  15 * 60,
-  'custom':      25 * 60,
+  'focus': 25 * 60,
+  'short-break': 5 * 60,
+  'long-break': 15 * 60,
+  'custom': 25 * 60,
 };
 
 export const LABELS = {
-  'focus':       'FOCUS',
+  'focus': 'FOCUS',
   'short-break': 'SHORT BREAK',
-  'long-break':  'LONG BREAK',
-  'custom':      'CUSTOM',
+  'long-break': 'LONG BREAK',
+  'custom': 'CUSTOM',
 };
 
 function loadStats() {
@@ -118,9 +118,9 @@ function createTimerStore() {
 
   return {
     subscribe, DURATIONS, LABELS,
-    start()  { clearTick(); update(s => ({ ...s, status: 'running' })); lastTickAt = Date.now(); interval = setInterval(tick, 1000); },
-    pause()  { clearTick(); update(s => { const next = { ...s, status: 'paused' }; saveStats(next); return next; }); },
-    reset()  { clearTick(); update(s => { const next = { ...s, status: 'idle', remaining: DURATIONS[s.mode], elapsed: 0 }; saveStats(next); return next; }); },
+    start() { clearTick(); update(s => ({ ...s, status: 'running' })); lastTickAt = Date.now(); interval = setInterval(tick, 1000); },
+    pause() { clearTick(); update(s => { const next = { ...s, status: 'paused' }; saveStats(next); return next; }); },
+    reset() { clearTick(); update(s => { const next = { ...s, status: 'idle', remaining: DURATIONS[s.mode], elapsed: 0 }; saveStats(next); return next; }); },
     setMode(mode) {
       clearTick();
       update(s => {

@@ -13,13 +13,13 @@ export const toast = {
     return id;
   },
   success(msg, duration) { return this.show(msg, 'success', duration); },
-  error(msg, duration, code = null)   { return this.show(msg, 'error',   duration || 5000, code); },
-  info(msg, duration)    { return this.show(msg, 'info',    duration); },
-  warn(msg, duration)    { return this.show(msg, 'warn',    duration); },
+  error(msg, duration, code = null) { return this.show(msg, 'error', duration || 5000, code); },
+  info(msg, duration) { return this.show(msg, 'info', duration); },
+  warn(msg, duration) { return this.show(msg, 'warn', duration); },
   // action: { label, onClick } — shows an extra button on the toast.
   // Pass duration = 0 to keep it until the user interacts with it.
   withAction(msg, action, type = 'info', duration = 0) {
     return this.show(msg, type, duration, null, action);
   },
-  dismiss(id)            { update(t => t.filter(x => x.id !== id)); },
+  dismiss(id) { update(t => t.filter(x => x.id !== id)); },
 };

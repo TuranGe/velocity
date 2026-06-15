@@ -1,7 +1,7 @@
 import { writable } from 'svelte/store';
 import { browser } from '$app/environment';
 
-const stored = (browser && localStorage.getItem('velocity-audio')) 
+const stored = (browser && localStorage.getItem('velocity-audio'))
   ? JSON.parse(localStorage.getItem('velocity-audio'))
   : { volume: 0.06, enabled: true };
 

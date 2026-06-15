@@ -5,19 +5,19 @@ export const API_URL = 'http://localhost:3717';
 
 // ─── Auth store ──────────────────────────────────────────────
 function createAuthStore() {
-  const storedUser  = browser ? localStorage.getItem('velocity-user')  : null;
+  const storedUser = browser ? localStorage.getItem('velocity-user') : null;
   const storedToken = browser ? localStorage.getItem('velocity-token') : null;
   const { subscribe, set, update } = writable({
-    user:  storedUser  ? JSON.parse(storedUser)  : null,
+    user: storedUser ? JSON.parse(storedUser) : null,
     token: storedToken || null,
   });
 
   function persist(user, token, refreshToken) {
     if (!browser) return;
-    if (user)  localStorage.setItem('velocity-user',  JSON.stringify(user));
-    else       localStorage.removeItem('velocity-user');
+    if (user) localStorage.setItem('velocity-user', JSON.stringify(user));
+    else localStorage.removeItem('velocity-user');
     if (token) localStorage.setItem('velocity-token', token);
-    else       localStorage.removeItem('velocity-token');
+    else localStorage.removeItem('velocity-token');
     if (refreshToken) localStorage.setItem('velocity-refresh-token', refreshToken);
     else if (refreshToken === null) localStorage.removeItem('velocity-refresh-token');
   }
@@ -25,21 +25,21 @@ function createAuthStore() {
   return {
     subscribe,
     async register(username, email, password) {
-      const data = await apiFetch('/api/auth/register', { method:'POST', body: JSON.stringify({username,email,password}) });
+      const data = await apiFetch('/api/auth/register', { method: 'POST', body: JSON.stringify({ username, email, password }) });
       persist(data.user, data.token, data.refreshToken);
       set({ user: data.user, token: data.token });
       userStats.refresh();
       return data.user;
     },
     async login(email, password) {
-      const data = await apiFetch('/api/auth/login', { method:'POST', body: JSON.stringify({email,password}) });
+      const data = await apiFetch('/api/auth/login', { method: 'POST', body: JSON.stringify({ email, password }) });
       persist(data.user, data.token, data.refreshToken);
       set({ user: data.user, token: data.token });
       userStats.refresh();
       return data.user;
     },
     async oauth(provider, provider_id, email, username, profile_image) {
-      const data = await apiFetch('/api/auth/oauth', { method:'POST', body: JSON.stringify({provider,provider_id,email,username,profile_image}) });
+      const data = await apiFetch('/api/auth/oauth', { method: 'POST', body: JSON.stringify({ provider, provider_id, email, username, profile_image }) });
       persist(data.user, data.token, data.refreshToken);
       set({ user: data.user, token: data.token });
       userStats.refresh();
@@ -47,14 +47,14 @@ function createAuthStore() {
     },
     async updateProfile(updates) {
       const token = get({ subscribe }).token;
-      const data = await apiFetch('/api/auth/me', { method:'PATCH', body: JSON.stringify(updates), token });
+      const data = await apiFetch('/api/auth/me', { method: 'PATCH', body: JSON.stringify(updates), token });
       persist(data.user, data.token, undefined); // don't touch refreshToken
       set({ user: data.user, token: data.token });
       return data.user;
     },
     async linkProvider(provider, provider_id, discord_id) {
       const token = get({ subscribe }).token;
-      const data = await apiFetch('/api/auth/link', { method:'POST', body: JSON.stringify({ provider, provider_id, discord_id }), token });
+      const data = await apiFetch('/api/auth/link', { method: 'POST', body: JSON.stringify({ provider, provider_id, discord_id }), token });
       persist(data.user, data.token, undefined);
       set({ user: data.user, token: data.token });
       return data.user;
@@ -144,7 +144,7 @@ export async function fetchLeaderboard({ period = 'week', limit = 15, search = '
 
 // ─── Sessions ────────────────────────────────────────────────
 export async function recordSession(mode = 'focus', duration = 1500) {
-  return authedFetch('/api/sessions', { method:'POST', body: JSON.stringify({mode,duration}) });
+  return authedFetch('/api/sessions', { method: 'POST', body: JSON.stringify({ mode, duration }) });
 }
 export async function fetchMySessions() {
   return authedFetch('/api/sessions/me');
@@ -216,13 +216,13 @@ export async function fetchRemoteTasks(type) {
   return authedFetch(url);
 }
 export async function createRemoteTask(text, pomodoros, team_id, type = 'personal') {
-  return authedFetch('/api/tasks', { method:'POST', body: JSON.stringify({text,pomodoros,team_id,type}) });
+  return authedFetch('/api/tasks', { method: 'POST', body: JSON.stringify({ text, pomodoros, team_id, type }) });
 }
 export async function updateRemoteTask(id, updates) {
-  return authedFetch(`/api/tasks/${id}`, { method:'PATCH', body: JSON.stringify(updates) });
+  return authedFetch(`/api/tasks/${id}`, { method: 'PATCH', body: JSON.stringify(updates) });
 }
 export async function deleteRemoteTask(id) {
-  return authedFetch(`/api/tasks/${id}`, { method:'DELETE' });
+  return authedFetch(`/api/tasks/${id}`, { method: 'DELETE' });
 }
 
 // ─── Teams ───────────────────────────────────────────────────
@@ -230,7 +230,7 @@ export async function fetchTeams({ category, limit } = {}) {
   let url = '/api/teams';
   const p = new URLSearchParams();
   if (category) p.set('category', category);
-  if (limit)    p.set('limit', limit);
+  if (limit) p.set('limit', limit);
   if ([...p].length) url += '?' + p.toString();
   return apiFetch(url, { token: getToken() });
 }
@@ -238,25 +238,25 @@ export async function fetchTeam(teamId) {
   return apiFetch(`/api/teams/${teamId}`, { token: getToken() });
 }
 export async function createTeam(name, color, category) {
-  return authedFetch('/api/teams', { method:'POST', body: JSON.stringify({name,color,category}) });
+  return authedFetch('/api/teams', { method: 'POST', body: JSON.stringify({ name, color, category }) });
 }
 export async function joinTeamByCode(invite_code) {
-  return authedFetch('/api/teams/join', { method:'POST', body: JSON.stringify({invite_code}) });
+  return authedFetch('/api/teams/join', { method: 'POST', body: JSON.stringify({ invite_code }) });
 }
 export async function leaveTeam(teamId) {
-  return authedFetch(`/api/teams/${teamId}/leave`, { method:'DELETE' });
+  return authedFetch(`/api/teams/${teamId}/leave`, { method: 'DELETE' });
 }
 export async function deleteTeam(teamId) {
-  return authedFetch(`/api/teams/${teamId}`, { method:'DELETE' });
+  return authedFetch(`/api/teams/${teamId}`, { method: 'DELETE' });
 }
 export async function transferLeadership(teamId, new_leader_id) {
-  return authedFetch(`/api/teams/${teamId}/transfer`, { method:'POST', body: JSON.stringify({new_leader_id}) });
+  return authedFetch(`/api/teams/${teamId}/transfer`, { method: 'POST', body: JSON.stringify({ new_leader_id }) });
 }
 export async function updateMemberRole(teamId, userId, role) {
-  return authedFetch(`/api/teams/${teamId}/members/${userId}/role`, { method:'PATCH', body: JSON.stringify({role}) });
+  return authedFetch(`/api/teams/${teamId}/members/${userId}/role`, { method: 'PATCH', body: JSON.stringify({ role }) });
 }
 export async function kickMember(teamId, userId) {
-  return authedFetch(`/api/teams/${teamId}/members/${userId}`, { method:'DELETE' });
+  return authedFetch(`/api/teams/${teamId}/members/${userId}`, { method: 'DELETE' });
 }
 export async function fetchTeamTasks(teamId) {
   return authedFetch(`/api/teams/${teamId}/tasks`);

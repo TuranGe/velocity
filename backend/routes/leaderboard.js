@@ -8,11 +8,11 @@ router.get('/', optionalAuth, (req, res) => {
   const { period = 'alltime', limit = 15, search, offset = 0 } = req.query;
   const now = Math.floor(Date.now() / 1000);
   let timeFilter = '';
-  if (period === 'week')  timeFilter = `AND s.completed_at > ${now - 7 * 86400}`;
+  if (period === 'week') timeFilter = `AND s.completed_at > ${now - 7 * 86400}`;
   if (period === 'month') timeFilter = `AND s.completed_at > ${now - 30 * 86400}`;
 
   const havingFilter = search ? '' : 'HAVING sessions > 0';
-  const searchWhere  = search ? 'WHERE u.username LIKE ?' : '';
+  const searchWhere = search ? 'WHERE u.username LIKE ?' : '';
   const params = search ? [`%${search}%`] : [];
 
   const rows = query(`
