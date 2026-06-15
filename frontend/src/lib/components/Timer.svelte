@@ -36,7 +36,7 @@
     }
     showCustomInput = false;
     animateModeChange();
-    if (modeEl) glitchText(modeEl, 0.6);
+    if (modeEl) glitchText(modeEl, 0.6, LABELS[mode]);
     timer.setMode(mode);
   }
 
@@ -184,7 +184,7 @@
       delay: 0.1,
     });
 
-    if (modeEl) glitchText(modeEl, 0.6);
+    if (modeEl) glitchText(modeEl, 0.6, LABELS['custom']);
   }
 
   function handleStartPause() {
@@ -673,7 +673,7 @@
     border: none;
     cursor: pointer;
     padding: 0.3rem 0.6rem;
-    border-radius: var(--radius-md);
+    border-radius: var(--radius-sm);
     transition: color var(--transition-fast), background var(--transition-fast);
   }
   .keyboard-hint:hover {

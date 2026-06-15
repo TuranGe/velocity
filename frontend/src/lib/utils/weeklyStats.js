@@ -11,7 +11,27 @@
 //    entries already have `label` (Mon..Sun). Preferred for the Monday
 //    recap.
 
-const ROLLING_DAY_LABELS = ['Sun', 'Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat'];
+/**
+ * Returns short day label (e.g. "Mon", "Pzt") for a given Date
+ * using the browser's locale — no hardcoded strings needed.
+ */
+function getDayLabel(date, locale) {
+  return new Intl.DateTimeFormat(locale || undefined, { weekday: 'short' }).format(date);
+}
+
+/**
+ * Format minutes into a human-readable focus time string.
+ * @param {number} minutes
+ * @param {(key: string) => string} [t] - optional translation function
+ * < 60 min  → "45 min" / "45 dk"
+ * >= 60 min → "1.5 hr" / "1.5 sa"
+ */
+export function formatFocusTime(minutes, t) {
+  const min = t ? t('unit_min') : 'min';
+  const hr  = t ? t('unit_hr')  : 'hr';
+  if (minutes < 60) return `${minutes} ${min}`;
+  return `${(minutes / 60).toFixed(1)} ${hr}`;
+}
 
 /**
  * @param {Array<{sessions?: number, total_seconds?: number, label?: string}>} daily
@@ -31,6 +51,7 @@ const ROLLING_DAY_LABELS = ['Sun', 'Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat'];
  * }}
  */
 export function computeWeeklyStats(daily = [], tasksCompleted = 0, currentStreak = 0, opts = {}) {
+  const { locale, t } = opts;
   const days = Array.from({ length: 7 }, (_, i) => daily[i] || { sessions: 0, total_seconds: 0 });
   const hasLabels = days.every(d => d.label);
 
@@ -47,7 +68,7 @@ export function computeWeeklyStats(daily = [], tasksCompleted = 0, currentStreak
     if (!label) {
       const date = new Date(today);
       date.setDate(today.getDate() - (6 - i));
-      label = ROLLING_DAY_LABELS[date.getDay()];
+      label = getDayLabel(date, locale);
       isToday = i === 6;
     }
     return {
@@ -64,7 +85,7 @@ export function computeWeeklyStats(daily = [], tasksCompleted = 0, currentStreak
     activeDays,
     bestDayMinutes,
     tasksCompleted,
-    totalHours: (totalMinutes / 60).toFixed(1),
+    totalHours: formatFocusTime(totalMinutes, t),
     chartDays,
     currentStreak,
   };

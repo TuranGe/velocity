@@ -3,6 +3,10 @@ import { browser } from '$app/environment';
 
 const translations = {
   en: {
+    minute: 'm',
+    hour: 'h',
+    day: 'd',
+    week: 'w',
     // Navbar
     timer: 'Timer',
     stats: 'Stats',
@@ -31,6 +35,7 @@ const translations = {
     no_tasks_hint: 'Add a task above to get started.',
     done_label: 'done',
     remaining_label: 'left',
+    completed: 'Completed',
 
     // Hero
     hero_badge: 'v1.0 — FOCUS SYSTEM',
@@ -141,6 +146,7 @@ const translations = {
     profile_label: 'PROFILE',
     profile_no_bio: 'No bio added yet.',
     profile_bio_placeholder: 'Write a short note about yourself...',
+    profile_username_placeholder: 'Username',
     profile_sessions: 'Sessions',
     profile_min_focus: 'Min Focus',
     profile_teams: 'Teams',
@@ -160,6 +166,7 @@ const translations = {
     profile_total_sessions: 'Total Sessions',
     profile_dakika_focus: 'Minutes Focus',
     profile_hours: 'Hours',
+    profile_focus_time: 'Focus Time',
     profile_team_membership: 'Team membership',
     profile_recent_label: 'RECENT',
     profile_recent_title: 'Recent Focus Sessions',
@@ -180,6 +187,8 @@ const translations = {
     profile_welcome: 'Welcome',
     profile_pick_photo: 'Pick Photo',
     profile_close: 'Close',
+    profile_streak: 'streak',
+    profile_share: 'Share',
 
     // Weekly Summary
     weekly_summary_label: 'WEEKLY RECAP',
@@ -192,11 +201,12 @@ const translations = {
     weekly_summary_tasks: 'Tasks Done',
     weekly_summary_streak: 'day streak',
     weekly_summary_best_day: 'Best day:',
+    weekly_goal: 'Weekly Goal',
 
     // Recap / Share Card
     recap_card_title: '📊 Stats Card',
     recap_tagline: 'WEEKLY RECAP',
-    recap_hours_focus: 'HOURS FOCUS',
+    recap_hours_focus: 'FOCUS TIME',
     recap_sessions: 'SESSIONS',
     recap_tasks_done: 'TASKS DONE',
     recap_last_7_days: 'LAST 7 DAYS',
@@ -208,6 +218,10 @@ const translations = {
     recap_download_failed: "Couldn't create the card, try again",
   },
   tr: {
+    minute: 'dk',
+    hour: 's',
+    day: 'g',
+    week: 'h',
     timer: 'Zamanlayıcı',
     stats: 'İstatistik',
     music_on: 'Müzik aç',
@@ -233,6 +247,7 @@ const translations = {
     no_tasks_hint: 'Yukarıdan bir görev ekle.',
     done_label: 'tamamlandı',
     remaining_label: 'kaldı',
+    completed: 'Tamamlandı',
 
     hero_badge: 'v1.0 — ODAK SİSTEMİ',
     hero_title_1: 'Daha hızlı üret.',
@@ -337,6 +352,7 @@ const translations = {
     profile_label: 'PROFİL',
     profile_no_bio: 'Henüz bio eklenmemiş.',
     profile_bio_placeholder: 'Kendin hakkında kısa bir not bırak...',
+    profile_username_placeholder: 'Kullanıcı adı',
     profile_sessions: 'Seans',
     profile_min_focus: 'Dk Odak',
     profile_teams: 'Takım',
@@ -356,6 +372,7 @@ const translations = {
     profile_total_sessions: 'Toplam Oturum',
     profile_dakika_focus: 'Dakika Odak',
     profile_hours: 'Saat',
+    profile_focus_time: 'Odak Süresi',
     profile_team_membership: 'Takım üyeliği',
     profile_recent_label: 'SON',
     profile_recent_title: 'Son Odak Oturumları',
@@ -376,6 +393,8 @@ const translations = {
     profile_welcome: 'Hoş geldin',
     profile_pick_photo: 'Fotoğraf Seç',
     profile_close: 'Kapat',
+    profile_streak: 'üst üste',
+    profile_share: 'Paylaş',
 
     // Weekly Summary
     weekly_summary_label: 'HAFTALIK ÖZET',
@@ -388,11 +407,12 @@ const translations = {
     weekly_summary_tasks: 'Tamamlanan Görev',
     weekly_summary_streak: 'gün seri',
     weekly_summary_best_day: 'En iyi gün:',
+    weekly_goal: 'Haftalık Hedef',
 
     // Recap / Share Card
     recap_card_title: '📊 İstatistik Kartı',
     recap_tagline: 'HAFTALIK ÖZET',
-    recap_hours_focus: 'SAAT FOCUS',
+    recap_hours_focus: 'ODAK SÜRESİ',
     recap_sessions: 'OTURUM',
     recap_tasks_done: 'TAMAMLANAN GÖREV',
     recap_last_7_days: 'SON 7 GÜN',

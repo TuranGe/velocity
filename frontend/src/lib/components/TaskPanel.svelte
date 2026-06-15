@@ -323,7 +323,7 @@
             newTaskMinutes = Number.isFinite(v) && v > 0 ? Math.max(1, Math.min(480, Math.round(v))) : 25;
           }}
         />
-        <span class="duration-unit">dk</span>
+        <span class="duration-unit">{$t('minute')}</span>
         <button class="pomo-btn" on:click={() => newTaskMinutes = Math.min(480, newTaskMinutes + 5)}>+</button>
       </div>
       <button bind:this={addBtnEl} class="btn-add" on:click={handleAdd} aria-label="Ekle" disabled={!$auth.user}>
@@ -336,10 +336,10 @@
   {#if $auth.user && quickSuggestions.length > 0}
     <div class="quick-suggestions" transition:fade={{ duration: 150 }}>
       {#each quickSuggestions as sugg (sugg.norm)}
-        <button class="quick-chip" on:click={() => quickAdd(sugg)} title="Hızlı ekle: {sugg.text} ({sugg.durationMinutes}dk)">
+        <button class="quick-chip" on:click={() => quickAdd(sugg)} title="Hızlı ekle: {sugg.text} ({sugg.durationMinutes}{$t('minute')})">
           <span class="quick-chip-icon">⚡</span>
           <span class="quick-chip-text">{sugg.text}</span>
-          <span class="quick-chip-dur font-mono">{sugg.durationMinutes}dk</span>
+          <span class="quick-chip-dur font-mono">{sugg.durationMinutes}{$t('minute')}</span>
         </button>
       {/each}
     </div>
@@ -437,7 +437,7 @@
                     <span class="spent" class:accent={spentMin > 0}>{spentMin}</span>
                     <span class="sep">/</span>
                     <span class="total">{totalMin}</span>
-                    <span class="pomo-icon-sm">dk</span>
+                    <span class="pomo-icon-sm">{$t('minute')}</span>
                   </span>
                   <!-- Mini progress bar -->
                   <div class="task-mini-bar" title="{pct}%">

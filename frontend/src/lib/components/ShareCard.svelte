@@ -8,6 +8,7 @@
   export let initials = '?';
   export let profileImage = '';
   export let totalHours = '0.0';
+  export let totalMinutes = 0;
   export let totalSessions = 0;
   export let doneTasks = 0;
   export let chartDays = []; // [{ label, minutes, isToday }]
@@ -57,6 +58,7 @@
     {initials}
     {profileImage}
     {totalHours}
+    {totalMinutes}
     {totalSessions}
     {doneTasks}
     {chartDays}
@@ -70,6 +72,7 @@
       <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="7,10 12,15 17,10"/><line x1="12" y1="15" x2="12" y2="3"/></svg>
       PNG İndir
     </button>
+    <button class="btn-action btn-close" on:click={() => (show = false)}>Kapat</button>
   </div>
 </Modal>
 
@@ -122,4 +125,10 @@
     border: none;
   }
   .btn-download:hover { background: var(--accent-hover); box-shadow: 0 0 20px var(--accent-glow); }
+  .btn-close {
+    background: transparent;
+    border: 1px solid var(--border-base);
+    color: var(--text-secondary);
+  }
+  .btn-close:hover { border-color: var(--border-strong); color: var(--text-primary); }
 </style>

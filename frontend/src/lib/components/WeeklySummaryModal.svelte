@@ -1,10 +1,11 @@
 <script>
   import { onMount } from 'svelte';
+  import { get } from 'svelte/store';
   import { browser } from '$app/environment';
   import Modal from './Modal.svelte';
   import RecapCard from './RecapCard.svelte';
   import { auth, fetchLastWeekStats } from '$lib/stores/api';
-  import { t } from '$lib/stores/i18n';
+  import { t, lang } from '$lib/stores/i18n';
   import { computeWeeklyStats } from '$lib/utils/weeklyStats';
 
   const STORAGE_KEY = 'velocity-weekly-summary-seen';
@@ -47,7 +48,7 @@
         localStorage.setItem(seenKey, weekKey);
         return;
       }
-      stats = computeWeeklyStats(data.daily, data.tasksCompleted, data.streak, { isPastWeek: true });
+      stats = computeWeeklyStats(data.daily, data.tasksCompleted, data.streak, { isPastWeek: true, locale: get(lang) === 'tr' ? 'tr-TR' : 'en-US', t: get(t) });
     } catch {
       return; // No remote data — don't show a recap we can't back up
     }

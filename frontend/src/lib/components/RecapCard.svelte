@@ -4,6 +4,7 @@
   import { auth } from '$lib/stores/api';
   import { getCachedProfilePhoto } from '$lib/utils/profilePhotoCache';
   import { t } from '$lib/stores/i18n';
+  import { formatFocusTime } from '$lib/utils/weeklyStats';
 
   // Presentational 600x320 "recap card" — shared by ShareCard (manual
   // share, last-7-days) and WeeklySummaryModal (Monday auto recap,
@@ -13,8 +14,14 @@
   export let username = 'User';
   export let initials = '?';
   export let profileImage = '';
-  export let totalHours = '0.0';
+  export let totalHours = '0.0';   // kept for back-compat
+  export let totalMinutes = 0;
   export let totalSessions = 0;
+
+  // Prefer totalMinutes if provided, fall back to parsing totalHours string
+  $: displayTime = totalMinutes > 0
+    ? formatFocusTime(totalMinutes)
+    : (totalHours ?? '0');
   export let doneTasks = 0;
   export let chartDays = []; // [{ label, minutes, isToday }]
   export let currentStreak = 0;
@@ -138,7 +145,7 @@
       <!-- Stats row -->
       <div class="rc-stats">
         <div class="rc-stat">
-          <div class="rc-stat-value accent">{totalHours}</div>
+          <div class="rc-stat-value accent">{displayTime}</div>
           <div class="rc-stat-label">{$t('recap_hours_focus')}</div>
         </div>
         <div class="rc-stat">
@@ -163,6 +170,9 @@
               <div class="rc-bar" class:today={day.isToday} style="height: {pct}%"></div>
             </div>
             <div class="rc-bar-label">{day.label}</div>
+            <div class="rc-bar-duration">
+              {#if day.minutes === 0}—{:else}{formatFocusTime(day.minutes)}{/if}
+            </div>
           </div>
         {/each}
       </div>
@@ -274,12 +284,13 @@
 
   /* Chart */
   .rc-chart-label { font-size: 12px; font-weight: 700; letter-spacing: 1px; color: #999; margin-bottom: 10px; }
-  .rc-chart { display: flex; gap: 10px; height: 64px; align-items: flex-end; margin-bottom: 10px; }
-  .rc-bar-col { flex: 1; display: flex; flex-direction: column; align-items: center; gap: 6px; height: 100%; }
+  .rc-chart { display: flex; gap: 10px; height: 64px; align-items: flex-end; margin-bottom: 4px; }
+  .rc-bar-col { flex: 1; display: flex; flex-direction: column; align-items: center; gap: 4px; height: 100%; }
   .rc-bar-track { width: 100%; height: 50px; display: flex; align-items: flex-end; }
   .rc-bar { width: 100%; border-radius: 3px; background: #3a3a3a; min-height: 3px; }
   .rc-bar.today { background: linear-gradient(90deg, #f97316, #fb923c); }
   .rc-bar-label { font-family: var(--font-mono, monospace); font-size: 10px; color: #999; }
+  .rc-bar-duration { font-family: var(--font-mono, monospace); font-size: 9px; color: #666; line-height: 1; }
 
   /* Footer */
   .rc-footer { font-family: var(--font-mono, monospace); font-size: 10px; letter-spacing: 1px; color: #666; }

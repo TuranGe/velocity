@@ -74,9 +74,9 @@ export function magneticHover(el, strength = 0.4) {
  * @param {HTMLElement} el
  * @param {number} [duration]
  */
-export function glitchText(el, duration = 0.8) {
+export function glitchText(el, duration = 0.8, targetText = null) {
   if (!gsapInstance) return;
-  const original = el.textContent ?? '';
+  const original = targetText ?? el.textContent ?? '';
   const chars = '!@#$%^&*01';
   let tl = gsapInstance.timeline();
   const steps = 8;

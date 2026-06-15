@@ -9,7 +9,7 @@
   import { t } from '$lib/stores/i18n';
   import { weeklyGoal } from '$lib/stores/weeklyGoal';
   import { getCachedProfilePhoto, setCachedProfilePhoto } from '$lib/utils/profilePhotoCache';
-  import { computeWeeklyStats } from '$lib/utils/weeklyStats';
+  import { computeWeeklyStats, formatFocusTime } from '$lib/utils/weeklyStats';
 
   let user = $auth.user;
   let editing = false;
@@ -140,7 +140,7 @@
   // All-time totals come exclusively from the database — never merged
   // with local timer/localStorage values, which a user could edit.
   $: totalMinutes = remoteStats ? Math.floor(remoteStats.total_seconds / 60) : 0;
-  $: totalHours = (totalMinutes / 60).toFixed(1);
+  $: totalHours = formatFocusTime(totalMinutes);
   $: totalSessions = remoteStats ? remoteStats.total_sessions : 0;
 
   $: initials = user?.username?.slice(0, 1).toUpperCase() ?? '?';
@@ -252,7 +252,7 @@
             class="username-input"
             bind:value={usernameEdit}
             maxlength="20"
-            placeholder="Kullanıcı adı"
+            placeholder={$t('profile_username_placeholder')}
             spellcheck="false"
           />
         {:else}
@@ -276,7 +276,7 @@
           {#if currentStreak > 0}
             <span class="pill pill-streak" class:streak-hot={currentStreak >= 7}>
               <span class="streak-flame">🔥</span>
-              {currentStreak} {currentStreak === 1 ? 'gün' : 'gün'} üst üste
+              {currentStreak} {currentStreak === 1 ? $t('day') : $t('day')} {$t('profile_streak')}
             </span>
           {/if}
           <span class="pill">
@@ -321,7 +321,7 @@
             </button>
             <button class="btn-share" on:click={() => showShareCard = true}>
               <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="18" cy="5" r="3"/><circle cx="6" cy="12" r="3"/><circle cx="18" cy="19" r="3"/><line x1="8.59" y1="13.51" x2="15.42" y2="17.49"/><line x1="15.41" y1="6.51" x2="8.59" y2="10.49"/></svg>
-              Paylaş
+              {$t('profile_share')}
             </button>
           {/if}
         </div>
@@ -344,19 +344,15 @@
             <span class="stat-desc">{$t('profile_total_sessions')}</span>
           </div>
           <div class="stat-block stat-accent">
-            <span class="stat-num font-mono">{totalMinutes}</span>
-            <span class="stat-desc">{$t('profile_dakika_focus')}</span>
-          </div>
-          <div class="stat-block">
             <span class="stat-num font-mono">{totalHours}</span>
-            <span class="stat-desc">{$t('profile_hours')}</span>
+            <span class="stat-desc">{$t('profile_focus_time')}</span>
           </div>
         </div>
 
         <!-- Weekly Goal -->
         <div class="weekly-goal">
           <div class="wg-header">
-            <span class="wg-label">🎯 Haftalık Hedef</span>
+            <span class="wg-label">🎯 {$t('weekly_goal')}</span>
             {#if editingGoal}
               <div class="wg-edit">
                 <input
@@ -368,13 +364,13 @@
                   step="0.5"
                   on:keydown={(e) => e.key === 'Enter' && saveGoal()}
                 />
-                <span class="wg-unit">sa/hafta</span>
+                <span class="wg-unit">{$t('hour')}/{$t('week')}</span>
                 <button class="wg-btn wg-btn-save" on:click={saveGoal}>✓</button>
                 <button class="wg-btn wg-btn-cancel" on:click={cancelEditGoal}>✕</button>
               </div>
             {:else}
               <button class="wg-edit-btn" on:click={startEditGoal}>
-                {weeklyGoalHours} sa/hafta
+                {weeklyGoalHours} {$t('hour')}/{$t('week')}
                 <svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><path d="M11 4H4a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2v-7"/><path d="M18.5 2.5a2.121 2.121 0 0 1 3 3L12 15l-4 1 1-4 9.5-9.5z"/></svg>
               </button>
             {/if}
@@ -383,9 +379,9 @@
             <div class="wg-bar-fill" class:wg-complete={weeklyGoalPct >= 100} style="width: {weeklyGoalPct}%"></div>
           </div>
           <div class="wg-footer">
-            <span class="wg-progress font-mono">{Math.floor(weeklyMinutes/60)}sa {weeklyMinutes%60}dk / {weeklyGoalHours}sa</span>
+            <span class="wg-progress font-mono">{Math.floor(weeklyMinutes/60)}{$t('hour')} {weeklyMinutes%60}{$t('minute')} / {weeklyGoalHours}{$t('hour')}</span>
             <span class="wg-pct font-mono" class:wg-complete-text={weeklyGoalPct >= 100}>
-              {weeklyGoalPct >= 100 ? '🎉 Tamamlandı!' : `${weeklyGoalPct}%`}
+              {weeklyGoalPct >= 100 ? `🎉 ${$t('completed')}` : `${weeklyGoalPct}%`}
             </span>
           </div>
         </div>
@@ -393,7 +389,7 @@
         <div class="daily-chart">
           {#each chartDays as day}
             <div class="chart-col">
-              <div class="chart-bar-wrap" title="{day.label}: {day.sessions} seans, {day.minutes}dk">
+              <div class="chart-bar-wrap" title="{day.label}: {day.sessions} seans, {day.minutes}{$t('minute')}">
                 <div
                   class="chart-bar"
                   class:chart-bar-today={day.isToday}
@@ -415,7 +411,7 @@
         {#if totalTasks > 0}
           <div class="task-progress-block">
             <div class="task-progress-header">
-              <span class="task-progress-label">Tasks Completed</span>
+              <span class="task-progress-label">{$t('tasks_completed_stat')}</span>
               <span class="task-progress-count font-mono">{doneTasks}/{totalTasks}</span>
             </div>
             <div class="task-progress-track">
@@ -557,6 +553,7 @@
     initials={initials}
     profileImage={profileImageUrl}
     totalHours={weeklyStats.totalHours}
+    totalMinutes={weeklyStats.totalMinutes}
     totalSessions={weeklyStats.totalSessions}
     doneTasks={weeklyStats.tasksCompleted}
     chartDays={weeklyStats.chartDays}
@@ -880,7 +877,7 @@
   /* Stats */
   .stat-trio {
     display: grid;
-    grid-template-columns: repeat(3, 1fr);
+    grid-template-columns: 1fr 1fr;
     gap: 0.75rem;
     margin-bottom: 1rem;
   }
