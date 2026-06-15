@@ -1,6 +1,6 @@
 # Velocity Timer
 
-Minimal focus timer for developers — monorepo with Node.js backend and SvelteKit frontend.
+Minimal focus timer for developers, students — monorepo with Node.js backend and SvelteKit frontend.
 
 ## Quick Start
 
