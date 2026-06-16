@@ -6,7 +6,6 @@
   import NavAuthModal from './NavAuthModal.svelte';
   import { magneticHover, initGSAP } from '$lib/utils/gsap';
   import { createAmbientEngine } from '$lib/utils/ambientAudio';
-  import { t, toggleLang } from '$lib/stores/i18n';
   import { auth } from '$lib/stores/api';
   import { audio } from '$lib/stores/audio';
   import { toast } from '$lib/stores/toast';
@@ -27,11 +26,11 @@
   let showProfile = false;
 
   $: user = $auth.user;
-  $: links = [
-    { href: '/',            label: $t('timer')       },
-    { href: '/teams',       label: $t('teams')       },
-    { href: '/leaderboard', label: $t('leaderboard') },
-    { href: '/stats',       label: $t('stats')       },
+  const links = [
+    { href: '/',            label: 'Timer'       },
+    { href: '/teams',       label: 'Teams'       },
+    { href: '/leaderboard', label: 'Leaderboard' },
+    { href: '/stats',       label: 'Stats'       },
   ];
 
   onMount(async () => {
@@ -76,7 +75,7 @@
   function handleLogout() {
     auth.logout();
     showProfile = false;
-    toast.info($t('logged_out'));
+    toast.info("Logged out");
   }
 </script>
 
@@ -127,11 +126,6 @@
       {#if musicPlaying}<span class="playing-dot"></span>{/if}
     </button>
 
-    <!-- Language -->
-    <button class="icon-btn lang-btn font-mono" on:click={toggleLang} title="Switch language">
-      {$t('lang_toggle')}
-    </button>
-
     <ThemeToggle />
 
     <!-- User / Auth -->
@@ -146,15 +140,15 @@
         </button>
         {#if showProfile}
           <div class="dropdown" transition:fly={{ y: -8, duration: 150 }}>
-            <a href="/stats" class="dropdown-item" on:click={() => showProfile = false}>📊 {$t('stats')}</a>
-            <a href="/profile" class="dropdown-item" on:click={() => showProfile = false}>👤 {$t('profile')}</a>
+            <a href="/stats" class="dropdown-item" on:click={() => showProfile = false}>📊 Stats</a>
+            <a href="/profile" class="dropdown-item" on:click={() => showProfile = false}>👤 Profile</a>
             <div class="dropdown-divider"></div>
-            <button class="dropdown-item danger" on:click={handleLogout}>{$t('sign_out')}</button>
+            <button class="dropdown-item danger" on:click={handleLogout}>Sign Out</button>
           </div>
         {/if}
       </div>
     {:else}
-      <button class="auth-btn font-mono" on:click={() => openAuth('login')}>{$t('sign_in')}</button>
+      <button class="auth-btn font-mono" on:click={() => openAuth('login')}>Sign In</button>
     {/if}
   </div>
 </nav>
@@ -214,7 +208,6 @@
     transition: all var(--transition-fast); cursor: pointer;
   }
   .icon-btn:hover { border-color: var(--accent); color: var(--accent); background: var(--accent-subtle); }
-  .lang-btn { font-size: 0.65rem; font-weight: 700; letter-spacing: 0.1em; }
 
   .settings-btn { position: relative; }
   .playing-dot {

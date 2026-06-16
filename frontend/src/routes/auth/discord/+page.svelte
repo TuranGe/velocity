@@ -4,8 +4,6 @@
   import { page } from '$app/stores';
   import { goto } from '$app/navigation';
   import { toast } from '$lib/stores/toast';
-  import { t } from '$lib/stores/i18n';
-
   let loading = true;
   let error = '';
 
@@ -15,7 +13,7 @@
       const mode = $page.url.searchParams.get('state');
 
       if (!code) {
-        error = $t('auth_discord_no_code');
+        error = No authorization code received;
         loading = false;
         return;
       }
@@ -35,15 +33,15 @@
 
       if (mode === 'link' && $auth.user) {
         await auth.linkProvider('discord', data.provider_id, data.provider_id);
-        toast.success($t('profile_discord_linked'));
+        toast.success(Discord account linked! 🎉);
         goto('/profile');
       } else {
         await auth.oauth('discord', data.provider_id, data.email, data.username, data.profile_image);
-        toast.success(`${$t('profile_welcome')}, ${data.username}! 🎉`);
+        toast.success(`${Welcome}, ${data.username}! 🎉`);
         goto('/');
       }
     } catch (e) {
-      error = e.message || $t('auth_discord_error_message');
+      error = e.message || Discord authentication failed;
       loading = false;
     }
   });
@@ -53,14 +51,14 @@
   {#if loading}
     <div class="loading">
       <div class="spinner"></div>
-      <span>{$t('auth_discord_loading')}</span>
+      <span>{Connecting...}</span>
     </div>
   {:else if error}
     <div class="error-card">
       <div class="error-icon">⚠️</div>
-      <h2>{$t('auth_discord_error_title')}</h2>
+      <h2>Authentication Error</h2>
       <p>{error}</p>
-      <a href="/">← {$t('auth_discord_return_home')}</a>
+      <a href="/">← Return to Home</a>
     </div>
   {/if}
 </div>

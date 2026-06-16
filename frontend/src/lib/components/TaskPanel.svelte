@@ -2,7 +2,6 @@
   import { onMount, onDestroy } from 'svelte';
   import { tasks } from '$lib/stores/tasks';
   import { auth, fetchRemoteTasks, createRemoteTask, updateRemoteTask, deleteRemoteTask } from '$lib/stores/api';
-  import { t } from '$lib/stores/i18n';
   import { initGSAP } from '$lib/utils/gsap';
   import { timer } from '$lib/stores/timer';
   import { frequentTasks } from '$lib/stores/frequentTasks';
@@ -147,7 +146,7 @@
   async function handleAdd() {
     if (!$auth.user) {
       gsap?.to(inputEl, { keyframes: [{ x: -6 }, { x: 6 }, { x: -4 }, { x: 4 }, { x: 0 }], duration: 0.4, ease: 'none' });
-      import('$lib/stores/toast').then(m => m.toast.warn($t('task_login_required')));
+      import('$lib/stores/toast').then(m => m.toast.warn('Sign in to add tasks'));
       return;
     }
     if (!newTaskText.trim()) {
@@ -269,21 +268,21 @@
     <div class="header-left">
       <h2 class="panel-title">
         <span class="title-dot" class:active={activeTasks > 0}></span>
-        {$t('tasks')}
+        Tasks
       </h2>
       {#if totalTasks > 0}
         <span class="task-count font-mono">{doneTasks}/{totalTasks}</span>
       {/if}
     </div>
     {#if $tasks.length > 0}
-      <button class="btn-clear" on:click={handleClear} title={$t('clear')}>
-        {$t('clear')}
+      <button class="btn-clear" on:click={handleClear} title="Clear all">
+        Clear all
       </button>
     {/if}
   </header>
 
   {#if totalTasks > 0}
-    <div class="progress-track" title="{doneTasks}/{totalTasks} {$t('completed')}">
+    <div class="progress-track" title="{doneTasks}/{totalTasks} Completed">
       <div class="progress-fill" style="width:{progressPct}%"></div>
       <span class="progress-label font-mono">{doneTasks}/{totalTasks}</span>
     </div>
@@ -293,8 +292,8 @@
     {#if !$auth.user}
       <div class="auth-gate">
         <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><rect x="3" y="11" width="18" height="11" rx="2"/><path d="M7 11V7a5 5 0 0 1 10 0v4"/></svg>
-        <span>{$t('task_gate_text')}</span>
-        <a href="/profile" class="auth-gate-link">{$t('task_gate_link')}</a>
+        <span>Sign in to add tasks</span>
+        <a href="/profile" class="auth-gate-link">Sign in →</a>
       </div>
     {/if}
     <input
@@ -303,12 +302,12 @@
       on:keydown={onKeydown}
       type="text"
       class="task-input"
-      placeholder={$auth.user ? $t('task_placeholder') : 'Giriş yapman gerekiyor...'}
+      placeholder={$auth.user ? "What are you working on?" : 'Sign in to add tasks...'}
       maxlength="80"
       disabled={!$auth.user}
     />
     <div class="form-row">
-      <div class="duration-picker" title={$t('session_tooltip')}>
+      <div class="duration-picker" title="How many 25-min focus sessions does this task need?">
         <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><circle cx="12" cy="12" r="10"/><polyline points="12 6 12 12 16 14"/></svg>
         <button class="pomo-btn" on:click={() => newTaskMinutes = Math.max(1, newTaskMinutes - 5)}>−</button>
         <input
@@ -323,11 +322,11 @@
             newTaskMinutes = Number.isFinite(v) && v > 0 ? Math.max(1, Math.min(480, Math.round(v))) : 25;
           }}
         />
-        <span class="duration-unit">{$t('minute')}</span>
+        <span class="duration-unit">m</span>
         <button class="pomo-btn" on:click={() => newTaskMinutes = Math.min(480, newTaskMinutes + 5)}>+</button>
       </div>
       <button bind:this={addBtnEl} class="btn-add" on:click={handleAdd} aria-label="Ekle" disabled={!$auth.user}>
-        + {$t('add')}
+        Add
       </button>
     </div>
   </div>
@@ -336,10 +335,10 @@
   {#if $auth.user && quickSuggestions.length > 0}
     <div class="quick-suggestions" transition:fade={{ duration: 150 }}>
       {#each quickSuggestions as sugg (sugg.norm)}
-        <button class="quick-chip" on:click={() => quickAdd(sugg)} title="Hızlı ekle: {sugg.text} ({sugg.durationMinutes}{$t('minute')})">
+        <button class="quick-chip" on:click={() => quickAdd(sugg)} title="Quick add: {sugg.text} ({sugg.durationMinutes}m)">
           <span class="quick-chip-icon">⚡</span>
           <span class="quick-chip-text">{sugg.text}</span>
-          <span class="quick-chip-dur font-mono">{sugg.durationMinutes}{$t('minute')}</span>
+          <span class="quick-chip-dur font-mono">{sugg.durationMinutes}m</span>
         </button>
       {/each}
     </div>
@@ -349,11 +348,11 @@
   {#if $tasks.filter(t => !t.done).length > 0}
     <p class="hint-text">
       {#if activeTasks > 0 && $timer.status === 'running'}
-        <span class="hint-active">⏱ {activeTasks} {$t('task_tracking_active')}</span>
+        <span class="hint-active">⏱ {activeTasks} tasks in progress</span>
       {:else if activeTasks > 0}
-        <span class="hint-active">✓ {activeTasks} {$t('task_selected_hint')}</span>
+        <span class="hint-active">✓ {activeTasks} tasks selected — start the timer!</span>
       {:else}
-        {$t('task_select_hint')}
+        <span class="hint-text">Select a task, then start the timer</span>
       {/if}
     </p>
   {/if}
@@ -388,8 +387,8 @@
                 <path d="M86 56l-3 6 6-3-3-3z" fill="var(--text-tertiary)" opacity="0.6"/>
               </g>
             </svg>
-            <span>{$t('no_tasks')}</span>
-            <span class="empty-hint">{$t('no_tasks_hint')}</span>
+            <span>No tasks yet.</span>
+            <span class="empty-hint">Add a task above to get started.</span>
           </li>
         {/if}
 
@@ -408,10 +407,10 @@
               class:completed={task.done}
               class:timer-locked={!task.done && ($timer.status === 'running' || $timer.status === 'paused')}
               on:click={(e) => !task.done && handleToggleSelected(task.id, e.currentTarget.closest('.task-item'))}
-              aria-label={task.done ? $t('completed') : task.selected ? $t('remove_selection') : $t('working_on_this')}
+              aria-label={task.done ? 'Completed' : task.selected ? 'Remove selection' : 'Working on this'}
               aria-pressed={task.selected}
               disabled={task.done || $timer.status === 'running' || $timer.status === 'paused'}
-              title={task.done ? $t('completed') : ($timer.status === 'running' || $timer.status === 'paused') ? $t('timer_locked') : task.selected ? $t('remove_selection') : $t('select_task')}
+              title={task.done ? 'Completed' : ($timer.status === 'running' || $timer.status === 'paused') ? 'Timer is running. Stop or reset before changing modes.' : task.selected ? 'Remove selection' : 'Select task'}
             >
               {#if task.done}
                 <!-- Done: solid checkmark -->
@@ -437,7 +436,7 @@
                     <span class="spent" class:accent={spentMin > 0}>{spentMin}</span>
                     <span class="sep">/</span>
                     <span class="total">{totalMin}</span>
-                    <span class="pomo-icon-sm">{$t('minute')}</span>
+                    <span class="pomo-icon-sm">m</span>
                   </span>
                   <!-- Mini progress bar -->
                   <div class="task-mini-bar" title="{pct}%">
@@ -450,8 +449,8 @@
             <button
               class="task-delete"
               on:click={(e) => handleRemove(task.id, e.currentTarget.closest('.task-item'))}
-              aria-label={$t('delete_task')}
-              title={$t('delete_task')}
+              aria-label="Delete task"
+              title="Delete task"
             >
               <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round">
                 <line x1="18" y1="6" x2="6" y2="18"/>

@@ -6,7 +6,6 @@
   import { auth, fetchMySessions, fetchTeams, API_URL } from '$lib/stores/api';
   import { tasks } from '$lib/stores/tasks';
   import { toast } from '$lib/stores/toast';
-  import { t } from '$lib/stores/i18n';
   import { weeklyGoal } from '$lib/stores/weeklyGoal';
   import { getCachedProfilePhoto, setCachedProfilePhoto } from '$lib/utils/profilePhotoCache';
   import { computeWeeklyStats, formatFocusTime } from '$lib/utils/weeklyStats';
@@ -83,7 +82,7 @@
   }
 
   function linkDiscord() {
-    if (!DISCORD_CLIENT_ID) { toast.error($t('profile_discord_not_configured')); return; }
+    if (!DISCORD_CLIENT_ID) { toast.error("Discord OAuth is not configured"); return; }
     linkingDiscord = true;
     const redirectUri = encodeURIComponent(DISCORD_REDIRECT);
     const clientId = encodeURIComponent(DISCORD_CLIENT_ID);
@@ -99,8 +98,8 @@
     const file = event.target.files?.[0];
     event.target.value = '';
     if (!file) return;
-    if (file.size > 5 * 1024 * 1024) { toast.error($t('profile_photo_too_large')); return; }
-    if (!file.type.startsWith('image/')) { toast.error($t('profile_invalid_image')); return; }
+    if (file.size > 5 * 1024 * 1024) { toast.error("Photo too large (max 5MB)"); return; }
+    if (!file.type.startsWith('image/')) { toast.error("Please select a valid image file"); return; }
     const reader = new FileReader();
     reader.onload = () => {
       profileImageUrl = typeof reader.result === 'string' ? reader.result : '';
@@ -121,7 +120,7 @@
         bio: bio.trim(),
         profile_image: profileImageUrl || null,
       });
-      toast.success($t('profile_saved'));
+      toast.success("Profile updated");
       editing = false;
       showAvatarModal = false;
     } catch (error) {
@@ -214,7 +213,7 @@
 
 {#if !user}
   <div class="page">
-    <div class="empty-state">{$t('profile_login_required')}</div>
+    <div class="empty-state">You must be logged in</div>
   </div>
 {:else}
   <div class="page" transition:fly={{ y: 20, duration: 300 }}>
@@ -225,7 +224,7 @@
 
       <!-- Left: avatar -->
       <div class="hero-left">
-        <button class="avatar-wrap" on:click={openAvatarModal} title={$t('profile_change_photo')}>
+        <button class="avatar-wrap" on:click={openAvatarModal} title="Change Photo">
           {#if profileImageUrl}
             <img src={profileImageUrl} alt="avatar" class="avatar-img" />
           {:else}
@@ -240,19 +239,19 @@
         </button>
 
         {#if profileImageUrl && editing}
-          <button class="link-btn" on:click={clearPhoto}>{$t('profile_remove_photo')}</button>
+          <button class="link-btn" on:click={clearPhoto}>Remove Photo</button>
         {/if}
       </div>
 
       <!-- Center: identity -->
       <div class="hero-center">
-        <span class="hero-eyebrow">{$t('profile_label')}</span>
+        <span class="hero-eyebrow">PROFILE</span>
         {#if editing}
           <input
             class="username-input"
             bind:value={usernameEdit}
             maxlength="20"
-            placeholder={$t('profile_username_placeholder')}
+            placeholder="Username"
             spellcheck="false"
           />
         {:else}
@@ -264,32 +263,32 @@
             class="bio-textarea"
             bind:value={bio}
             maxlength="500"
-            placeholder={$t('profile_bio_placeholder')}
+            placeholder="Write a short note about yourself..."
           ></textarea>
         {:else if bio}
           <p class="hero-bio">{bio}</p>
         {:else}
-          <p class="hero-bio muted">{$t('profile_no_bio')}</p>
+          <p class="hero-bio muted">No bio added yet.</p>
         {/if}
 
         <div class="hero-pills">
           {#if currentStreak > 0}
             <span class="pill pill-streak" class:streak-hot={currentStreak >= 7}>
               <span class="streak-flame">🔥</span>
-              {currentStreak} {currentStreak === 1 ? $t('day') : $t('day')} {$t('profile_streak')}
+              {currentStreak} {currentStreak === 1 ? 'days' : 'days'} streak
             </span>
           {/if}
           <span class="pill">
             <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><circle cx="12" cy="12" r="10"/><polyline points="12 6 12 12 16 14"/></svg>
-            {totalSessions} {$t('profile_sessions')}
+            {totalSessions} Sessions
           </span>
           <span class="pill">
             <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><path d="M12 2v20M17 5H9.5a3.5 3.5 0 0 0 0 7h5a3.5 3.5 0 0 1 0 7H6"/></svg>
-            {totalMinutes} {$t('profile_min_focus')}
+            {totalMinutes} Min Focus
           </span>
           <span class="pill">
             <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><path d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2"/><circle cx="9" cy="7" r="4"/><path d="M23 21v-2a4 4 0 0 0-3-3.87M16 3.13a4 4 0 0 1 0 7.75"/></svg>
-            {teamCount} {$t('profile_teams')}
+            {teamCount} Teams
           </span>
         </div>
       </div>
@@ -299,29 +298,29 @@
         {#if !user.discord_id}
           <button class="btn-discord" on:click={linkDiscord} disabled={linkingDiscord}>
             <svg width="16" height="16" viewBox="0 0 24 24" fill="currentColor"><path d="M20.317 4.37a19.791 19.791 0 0 0-4.885-1.515.074.074 0 0 0-.079.037c-.21.375-.444.864-.608 1.25a18.27 18.27 0 0 0-5.487 0 12.64 12.64 0 0 0-.617-1.25.077.077 0 0 0-.079-.037A19.736 19.736 0 0 0 3.677 4.37a.07.07 0 0 0-.032.027C.533 9.046-.32 13.58.099 18.057a.082.082 0 0 0 .031.057 19.9 19.9 0 0 0 5.993 3.03.078.078 0 0 0 .084-.028c.462-.63.874-1.295 1.226-1.994a.076.076 0 0 0-.041-.106 13.107 13.107 0 0 1-1.872-.892.077.077 0 0 1-.008-.128 10.2 10.2 0 0 0 .372-.292.074.074 0 0 1 .077-.01c3.928 1.793 8.18 1.793 12.062 0a.074.074 0 0 1 .078.01c.12.098.246.198.373.292a.077.077 0 0 1-.006.127 12.299 12.299 0 0 1-1.873.892.077.077 0 0 0-.041.107c.36.698.772 1.362 1.225 1.993a.076.076 0 0 0 .084.028 19.839 19.839 0 0 0 6.002-3.03.077.077 0 0 0 .032-.054c.5-5.177-.838-9.674-3.549-13.66a.061.061 0 0 0-.031-.03z"/></svg>
-            {linkingDiscord ? $t('profile_discord_linking') : $t('profile_discord_connect')}
+            {linkingDiscord ? 'Redirecting...' : 'Connect Discord'}
           </button>
         {:else}
           <span class="badge-discord">
             <svg width="14" height="14" viewBox="0 0 24 24" fill="currentColor"><path d="M20.317 4.37a19.791 19.791 0 0 0-4.885-1.515.074.074 0 0 0-.079.037c-.21.375-.444.864-.608 1.25a18.27 18.27 0 0 0-5.487 0 12.64 12.64 0 0 0-.617-1.25.077.077 0 0 0-.079-.037A19.736 19.736 0 0 0 3.677 4.37a.07.07 0 0 0-.032.027C.533 9.046-.32 13.58.099 18.057a.082.082 0 0 0 .031.057 19.9 19.9 0 0 0 5.993 3.03.078.078 0 0 0 .084-.028c.462-.63.874-1.295 1.226-1.994a.076.076 0 0 0-.041-.106 13.107 13.107 0 0 1-1.872-.892.077.077 0 0 1-.008-.128 10.2 10.2 0 0 0 .372-.292.074.074 0 0 1 .077-.01c3.928 1.793 8.18 1.793 12.062 0a.074.074 0 0 1 .078.01c.12.098.246.198.373.292a.077.077 0 0 1-.006.127 12.299 12.299 0 0 1-1.873.892.077.077 0 0 0-.041.107c.36.698.772 1.362 1.225 1.993a.076.076 0 0 0 .084.028 19.839 19.839 0 0 0 6.002-3.03.077.077 0 0 0 .032-.054c.5-5.177-.838-9.674-3.549-13.66a.061.061 0 0 0-.031-.03z"/></svg>
-            {$t('profile_discord_connected')}
+            Discord Connected ✓
           </span>
         {/if}
 
         <div class="edit-row">
           {#if editing}
-            <button class="btn-cancel" on:click={cancelEdit}>{$t('profile_cancel')}</button>
+            <button class="btn-cancel" on:click={cancelEdit}>Cancel</button>
             <button class="btn-save" on:click={saveProfile} disabled={saving}>
-              {saving ? $t('profile_saving') : $t('profile_save')}
+              {saving ? 'Saving...' : 'Save'}
             </button>
           {:else}
             <button class="btn-edit" on:click={() => editing = true}>
               <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M11 4H4a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2v-7"/><path d="M18.5 2.5a2.121 2.121 0 0 1 3 3L12 15l-4 1 1-4 9.5-9.5z"/></svg>
-              {$t('profile_edit')}
+              Edit
             </button>
             <button class="btn-share" on:click={() => showShareCard = true}>
               <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="18" cy="5" r="3"/><circle cx="6" cy="12" r="3"/><circle cx="18" cy="19" r="3"/><line x1="8.59" y1="13.51" x2="15.42" y2="17.49"/><line x1="15.41" y1="6.51" x2="8.59" y2="10.49"/></svg>
-              {$t('profile_share')}
+              Share
             </button>
           {/if}
         </div>
@@ -334,25 +333,25 @@
       <!-- Stats panel -->
       <section class="panel">
         <div class="panel-header">
-          <span class="panel-eyebrow">{$t('profile_stats_label')}</span>
-          <h2 class="panel-title">{$t('profile_focus_summary')}</h2>
+          <span class="panel-eyebrow">STATS</span>
+          <h2 class="panel-title">Focus Summary</h2>
         </div>
 
         <div class="stat-trio">
           <div class="stat-block">
             <span class="stat-num font-mono">{totalSessions}</span>
-            <span class="stat-desc">{$t('profile_total_sessions')}</span>
+            <span class="stat-desc">Total Sessions</span>
           </div>
           <div class="stat-block stat-accent">
             <span class="stat-num font-mono">{totalHours}</span>
-            <span class="stat-desc">{$t('profile_focus_time')}</span>
+            <span class="stat-desc">Focus Time</span>
           </div>
         </div>
 
         <!-- Weekly Goal -->
         <div class="weekly-goal">
           <div class="wg-header">
-            <span class="wg-label">🎯 {$t('weekly_goal')}</span>
+            <span class="wg-label">🎯 Weekly Goal</span>
             {#if editingGoal}
               <div class="wg-edit">
                 <input
@@ -364,13 +363,13 @@
                   step="0.5"
                   on:keydown={(e) => e.key === 'Enter' && saveGoal()}
                 />
-                <span class="wg-unit">{$t('hour')}/{$t('week')}</span>
+                <span class="wg-unit">h/w</span>
                 <button class="wg-btn wg-btn-save" on:click={saveGoal}>✓</button>
                 <button class="wg-btn wg-btn-cancel" on:click={cancelEditGoal}>✕</button>
               </div>
             {:else}
               <button class="wg-edit-btn" on:click={startEditGoal}>
-                {weeklyGoalHours} {$t('hour')}/{$t('week')}
+                {weeklyGoalHours} h/w
                 <svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><path d="M11 4H4a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2v-7"/><path d="M18.5 2.5a2.121 2.121 0 0 1 3 3L12 15l-4 1 1-4 9.5-9.5z"/></svg>
               </button>
             {/if}
@@ -379,9 +378,9 @@
             <div class="wg-bar-fill" class:wg-complete={weeklyGoalPct >= 100} style="width: {weeklyGoalPct}%"></div>
           </div>
           <div class="wg-footer">
-            <span class="wg-progress font-mono">{Math.floor(weeklyMinutes/60)}{$t('hour')} {weeklyMinutes%60}{$t('minute')} / {weeklyGoalHours}{$t('hour')}</span>
+            <span class="wg-progress font-mono">{Math.floor(weeklyMinutes/60)}h {weeklyMinutes%60}m / {weeklyGoalHours}h</span>
             <span class="wg-pct font-mono" class:wg-complete-text={weeklyGoalPct >= 100}>
-              {weeklyGoalPct >= 100 ? `🎉 ${$t('completed')}` : `${weeklyGoalPct}%`}
+              {weeklyGoalPct >= 100 ? `🎉 Completed` : `${weeklyGoalPct}%`}
             </span>
           </div>
         </div>
@@ -389,7 +388,7 @@
         <div class="daily-chart">
           {#each chartDays as day}
             <div class="chart-col">
-              <div class="chart-bar-wrap" title="{day.label}: {day.sessions} {$t('profile_chart_tooltip_sessions')}, {day.minutes}{$t('minute')}">
+              <div class="chart-bar-wrap" title="{day.label}: {day.sessions} sessions, {day.minutes}m">
                 <div
                   class="chart-bar"
                   class:chart-bar-today={day.isToday}
@@ -403,7 +402,7 @@
         </div>
 
         <div class="stat-footer">
-          <span class="stat-footer-label">{$t('profile_team_membership')}</span>
+          <span class="stat-footer-label">Team membership</span>
           <span class="stat-footer-val font-mono">{teamCount}</span>
         </div>
 
@@ -411,7 +410,7 @@
         {#if totalTasks > 0}
           <div class="task-progress-block">
             <div class="task-progress-header">
-              <span class="task-progress-label">{$t('tasks_completed_stat')}</span>
+              <span class="task-progress-label">Tasks Completed</span>
               <span class="task-progress-count font-mono">{doneTasks}/{totalTasks}</span>
             </div>
             <div class="task-progress-track">
@@ -424,8 +423,8 @@
       <!-- Recent sessions panel -->
       <section class="panel">
         <div class="panel-header">
-          <span class="panel-eyebrow">{$t('profile_recent_label')}</span>
-          <h2 class="panel-title">{$t('profile_recent_title')}</h2>
+          <span class="panel-eyebrow">RECENT</span>
+          <h2 class="panel-title">Recent Focus Sessions</h2>
         </div>
 
         {#if recentSessions.length}
@@ -439,14 +438,14 @@
                   <span class="session-name">{formatMode(session.mode)}</span>
                   <span class="session-date">{formatDate(session.completed_at)}</span>
                 </div>
-                <span class="session-dur font-mono">{Math.round(session.duration / 60)}{$t('minute')}</span>
+                <span class="session-dur font-mono">{Math.round(session.duration / 60)}m</span>
               </div>
             {/each}
           </div>
         {:else}
           <div class="empty-state-inner">
             <svg width="32" height="32" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" opacity="0.3"><circle cx="12" cy="12" r="10"/><polyline points="12 6 12 12 16 14"/></svg>
-            <p>{$t('profile_no_sessions')}</p>
+            <p>No recorded sessions yet.</p>
           </div>
         {/if}
       </section>
@@ -457,8 +456,8 @@
       <section class="panel panel-discord">
         <div class="panel-header discord-header">
           <div>
-            <span class="panel-eyebrow" style="color:#7289da">{$t('profile_discord_label')}</span>
-            <h2 class="panel-title">{$t('profile_discord_activity')}</h2>
+            <span class="panel-eyebrow" style="color:#7289da">DISCORD</span>
+            <h2 class="panel-title">Discord Activity</h2>
           </div>
           {#if discordActivity}
             <span class="status-badge" style="--status-color:{statusColor(discordActivity.discord_status)}">
@@ -469,7 +468,7 @@
         </div>
 
         {#if discordLoading}
-          <p class="muted-text">{$t('profile_discord_loading')}</p>
+          <p class="muted-text">Loading...</p>
         {:else if discordActivity}
           {@const spotify = discordActivity.listening_to_spotify ? discordActivity.spotify : null}
           {@const activities = (discordActivity.activities || []).filter(a => a.type !== 2 && a.type !== 4)}
@@ -478,7 +477,7 @@
               <div class="activity-card spotify-card">
                 <img src={spotify.album_art_url} alt={spotify.album} class="activity-art" />
                 <div class="activity-body">
-                  <span class="activity-label">{$t('profile_listening')}</span>
+                  <span class="activity-label">LISTENING TO SPOTIFY</span>
                   <span class="activity-title">{spotify.song}</span>
                   <span class="activity-sub">{spotify.artist} · {spotify.album}</span>
                 </div>
@@ -501,7 +500,7 @@
                   <div class="activity-art activity-art-fallback">💻</div>
                 {/if}
                 <div class="activity-body">
-                  <span class="activity-label">{$t('profile_playing')}</span>
+                  <span class="activity-label">PLAYING</span>
                   <span class="activity-title">{act.name}</span>
                   {#if act.details}<span class="activity-sub">{act.details}</span>{/if}
                   {#if act.state}<span class="activity-sub">{act.state}</span>{/if}
@@ -509,11 +508,11 @@
               </div>
             {/each}
             {#if !spotify && activities.length === 0}
-              <p class="muted-text">{$t('profile_discord_no_activity')}</p>
+              <p class="muted-text">No active activity right now.</p>
             {/if}
           </div>
         {:else}
-          <p class="muted-text">{$t('profile_discord_unavailable')}</p>
+          <p class="muted-text">Discord activity unavailable. Make sure you have joined the server with the bot.</p>
         {/if}
       </section>
     {/if}
@@ -524,8 +523,8 @@
   <Modal bind:show={showAvatarModal} on:close={() => (showAvatarModal = false)}>
     <div class="modal-head">
       <div>
-        <span class="panel-eyebrow">{$t('profile_avatar_modal_label')}</span>
-        <h3 class="modal-title">{$t('profile_avatar_modal_title')}</h3>
+        <span class="panel-eyebrow">PHOTO</span>
+        <h3 class="modal-title">Update your profile photo</h3>
       </div>
       <button class="modal-close" on:click={() => (showAvatarModal = false)}>✕</button>
     </div>
@@ -541,8 +540,8 @@
     <input bind:this={fileInput} type="file" accept="image/*" hidden on:change={handlePhotoUpload} />
 
     <div class="modal-footer">
-      <button class="btn-soft" on:click={triggerFilePicker}>{$t('profile_pick_photo')}</button>
-      <button class="btn-ghost" on:click={() => (showAvatarModal = false)}>{$t('profile_close')}</button>
+      <button class="btn-soft" on:click={triggerFilePicker}>Pick Photo</button>
+      <button class="btn-ghost" on:click={() => (showAvatarModal = false)}>Close</button>
     </div>
   </Modal>
 

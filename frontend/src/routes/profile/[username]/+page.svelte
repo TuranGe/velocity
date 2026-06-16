@@ -3,8 +3,6 @@
   import { page } from '$app/stores';
   import { fly } from 'svelte/transition';
   import { API_URL } from '$lib/stores/api';
-  import { t } from '$lib/stores/i18n';
-
   let profile = null;
   let loading = true;
   let error = null;
@@ -21,13 +19,13 @@
     try {
       const res = await fetch(`${API_URL}/api/users/${username}/profile`);
       if (!res.ok) {
-        error = res.status === 404 ? $t('profile_user_not_found') : $t('profile_load_error');
+        error = res.status === 404 ? 'User not found.' : 'Could not load profile.';
         return;
       }
       profile = await res.json();
       if (profile.user.discord_id) loadDiscordActivity(profile.user.discord_id);
     } catch {
-      error = $t('profile_load_error');
+      error = 'Could not load profile.';
     } finally {
       loading = false;
     }
@@ -72,7 +70,7 @@
     <div class="error-state" transition:fly={{ y: 16, duration: 260 }}>
       <span class="error-icon">👻</span>
       <p>{error}</p>
-      <a href="/" class="btn-ghost">{$t('auth_discord_return_home')}</a>
+      <a href="/" class="btn-ghost">Return to Home</a>
     </div>
 
   {:else if profile}
@@ -93,7 +91,7 @@
           </div>
 
           {#if profile.user.discord_id}
-            <span class="badge-discord" title="Discord bağlı">
+            <span class="badge-discord" title="Discord connected">
               <svg width="12" height="12" viewBox="0 0 24 24" fill="currentColor"><path d="M20.317 4.37a19.791 19.791 0 0 0-4.885-1.515.074.074 0 0 0-.079.037c-.21.375-.444.864-.608 1.25a18.27 18.27 0 0 0-5.487 0 12.64 12.64 0 0 0-.617-1.25.077.077 0 0 0-.079-.037A19.736 19.736 0 0 0 3.677 4.37a.07.07 0 0 0-.032.027C.533 9.046-.32 13.58.099 18.057a.082.082 0 0 0 .031.057 19.9 19.9 0 0 0 5.993 3.03.078.078 0 0 0 .084-.028c.462-.63.874-1.295 1.226-1.994a.076.076 0 0 0-.041-.106 13.107 13.107 0 0 1-1.872-.892.077.077 0 0 1-.008-.128 10.2 10.2 0 0 0 .372-.292.074.074 0 0 1 .077-.01c3.928 1.793 8.18 1.793 12.062 0a.074.074 0 0 1 .078.01c.12.098.246.198.373.292a.077.077 0 0 1-.006.127 12.299 12.299 0 0 1-1.873.892.077.077 0 0 0-.041.107c.36.698.772 1.362 1.225 1.993a.076.076 0 0 0 .084.028 19.839 19.839 0 0 0 6.002-3.03.077.077 0 0 0 .032-.054c.5-5.177-.838-9.674-3.549-13.66a.061.061 0 0 0-.031-.03z"/></svg>
               Discord
             </span>
@@ -102,28 +100,28 @@
 
         <!-- Identity -->
         <div class="hero-center">
-          <span class="hero-eyebrow">{$t('profile_label')}</span>
+          <span class="hero-eyebrow">PROFILE</span>
           <h1 class="hero-username">{profile.user.username}</h1>
 
           {#if profile.user.bio}
             <p class="hero-bio">{profile.user.bio}</p>
           {:else}
-            <p class="hero-bio muted">{$t('profile_no_bio')}</p>
+            <p class="hero-bio muted">{No bio added yet.}</p>
           {/if}
 
           <div class="hero-pills">
             <span class="pill">
               <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><circle cx="12" cy="12" r="10"/><polyline points="12 6 12 12 16 14"/></svg>
-              {profile.stats?.total_sessions ?? 0} {$t('profile_sessions')}
+              {profile.stats?.total_sessions ?? 0} Sessions
             </span>
             <span class="pill">
               <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><path d="M12 2v20M17 5H9.5a3.5 3.5 0 0 0 0 7h5a3.5 3.5 0 0 1 0 7H6"/></svg>
-              {fmtHours(profile.stats?.total_seconds ?? 0)}h {$t('profile_min_focus')}
+              {fmtHours(profile.stats?.total_seconds ?? 0)}h Min Focus
             </span>
             {#if profile.teams?.length}
               <span class="pill">
                 <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><path d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2"/><circle cx="9" cy="7" r="4"/><path d="M23 21v-2a4 4 0 0 0-3-3.87M16 3.13a4 4 0 0 1 0 7.75"/></svg>
-                {profile.teams.length} {$t('profile_teams')}
+                {profile.teams.length} Teams
               </span>
             {/if}
           </div>
@@ -136,22 +134,22 @@
         <!-- Stats -->
         <section class="panel">
           <div class="panel-header">
-            <span class="panel-eyebrow">{$t('profile_stats_label')}</span>
-            <h2 class="panel-title">{$t('profile_focus_summary')}</h2>
+            <span class="panel-eyebrow">STATS</span>
+            <h2 class="panel-title">Focus Summary</h2>
           </div>
 
           <div class="stat-trio">
             <div class="stat-block">
               <span class="stat-num font-mono">{profile.stats?.total_sessions ?? 0}</span>
-              <span class="stat-desc">{$t('profile_total_sessions')}</span>
+              <span class="stat-desc">Total Sessions</span>
             </div>
             <div class="stat-block stat-accent">
               <span class="stat-num font-mono">{Math.floor((profile.stats?.total_seconds ?? 0) / 60)}</span>
-              <span class="stat-desc">{$t('profile_dakika_focus')}</span>
+              <span class="stat-desc">Min Focus</span>
             </div>
             <div class="stat-block">
               <span class="stat-num font-mono">{fmtHours(profile.stats?.total_seconds ?? 0)}</span>
-              <span class="stat-desc">{$t('profile_hours')}</span>
+              <span class="stat-desc">Hours</span>
             </div>
           </div>
 
@@ -163,7 +161,7 @@
 
           {#if profile.teams?.length}
             <div class="stat-footer">
-              <span class="stat-footer-label">{$t('profile_team_membership')}</span>
+              <span class="stat-footer-label">Team membership</span>
               <span class="stat-footer-val font-mono">{profile.teams.length}</span>
             </div>
           {/if}
@@ -172,8 +170,8 @@
         <!-- Recent Sessions -->
         <section class="panel">
           <div class="panel-header">
-            <span class="panel-eyebrow">{$t('profile_recent_label')}</span>
-            <h2 class="panel-title">{$t('profile_recent_title')}</h2>
+            <span class="panel-eyebrow">RECENT</span>
+            <h2 class="panel-title">Recent Focus Sessions</h2>
           </div>
 
           {#if profile.recentSessions?.length}
@@ -187,14 +185,14 @@
                     <span class="session-name">{formatMode(s.mode)}</span>
                     <span class="session-date">{fmtDate(s.completed_at)}</span>
                   </div>
-                  <span class="session-dur font-mono">{Math.round(s.duration / 60)}{$t('minute')}</span>
+                  <span class="session-dur font-mono">{Math.round(s.duration / 60)}{m}</span>
                 </div>
               {/each}
             </div>
           {:else}
             <div class="empty-state-inner">
               <svg width="32" height="32" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" opacity="0.3"><circle cx="12" cy="12" r="10"/><polyline points="12 6 12 12 16 14"/></svg>
-              <p>{$t('profile_no_sessions')}</p>
+              <p>{No recorded sessions yet.}</p>
             </div>
           {/if}
         </section>
@@ -205,8 +203,8 @@
         <section class="panel panel-discord">
           <div class="panel-header discord-header">
             <div>
-              <span class="panel-eyebrow" style="color:#7289da">{$t('profile_discord_label')}</span>
-              <h2 class="panel-title">{$t('profile_discord_activity')}</h2>
+              <span class="panel-eyebrow" style="color:#7289da">DISCORD</span>
+              <h2 class="panel-title">Discord Activity</h2>
             </div>
             {#if discordActivity}
               <span class="status-badge" style="--status-color:{statusColor(discordStatus)}">
@@ -217,14 +215,14 @@
           </div>
 
           {#if discordLoading}
-            <p class="muted-text">{$t('profile_discord_loading')}</p>
+            <p class="muted-text">{Loading...}</p>
           {:else if discordActivity}
             <div class="activity-list">
               {#if spotify}
                 <div class="activity-card spotify-card">
                   <img src={spotify.album_art_url} alt={spotify.album} class="activity-art" />
                   <div class="activity-body">
-                    <span class="activity-label">{$t('profile_listening')}</span>
+                    <span class="activity-label">LISTENING TO SPOTIFY</span>
                     <span class="activity-title">{spotify.song}</span>
                     <span class="activity-sub">by {spotify.artist} · {spotify.album}</span>
                   </div>
@@ -247,7 +245,7 @@
                     <div class="activity-art activity-art-fallback">💻</div>
                   {/if}
                   <div class="activity-body">
-                    <span class="activity-label">{$t('profile_playing')}</span>
+                    <span class="activity-label">PLAYING</span>
                     <span class="activity-title">{act.name}</span>
                     {#if act.details}<span class="activity-sub">{act.details}</span>{/if}
                     {#if act.state}<span class="activity-sub">{act.state}</span>{/if}
@@ -255,11 +253,11 @@
                 </div>
               {/each}
               {#if !spotify && activities.length === 0}
-                <p class="muted-text">{$t('profile_discord_no_activity')}</p>
+                <p class="muted-text">{No active activity right now.}</p>
               {/if}
             </div>
           {:else}
-            <p class="muted-text">{$t('profile_discord_unavailable')}</p>
+            <p class="muted-text">{Discord activity unavailable. Make sure you have joined the server with the bot.}</p>
           {/if}
         </section>
       {/if}

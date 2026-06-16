@@ -1,57 +1,54 @@
 # Velocity Discord Presence Bot
 
-Bu bot, Discord kullanıcılarının aktivitelerini (Spotify, oyun, VS Code vb.) takip eder ve Velocity profillerinde gösterir. Kullanıcıların Lanyard gibi harici servislere üye olmasına gerek kalmaz — sadece **senin Discord sunucuna** katılmaları yeterlidir.
+This bot tracks Discord user activities (Spotify, games, VS Code, etc.) and displays them on Velocity profiles — no external services like Lanyard required. Users just need to join **your Discord server**.
 
-## Nasıl Çalışır?
+## How It Works
 
-1. Bot, Discord sunucundaki tüm üyelerin `presence` (aktivite) bilgilerini dinler.
-2. Her güncellemeyi bellek cache'ine yazar.
-3. Velocity backend'i `/presence/:userId` endpoint'ini sorgular.
-4. Frontend, profil sayfasında aktivite kartını gösterir.
+1. The bot listens to `presence` (activity) events for all members in your Discord server.
+2. Every update is written to an in-memory cache.
+3. The Velocity backend queries the bot's REST API for live presence data.
+4. The frontend renders an activity card on the user's profile page.
 
-## Kurulum
+## Setup
 
-### 1. Discord Bot Oluştur
+### 1. Create a Discord Bot
 
-1. [Discord Developer Portal](https://discord.com/developers/applications)'a git
-2. **New Application** → bir isim ver (örn. "Velocity Presence")
-3. **Bot** sekmesine git → **Add Bot**
-4. Token'ı kopyala (bir daha gösterilmez!)
-5. **Privileged Gateway Intents** altında şunları aktif et:
-   - ✅ **Server Members Intent**
-   - ✅ **Presence Intent**
-6. **OAuth2 → URL Generator** ile bot davet linki oluştur:
-   - Scope: `bot`
-   - Bot Permissions: `Read Messages/View Channels`
-7. Botu kendi sunucuna davet et
+1. Go to the [Discord Developer Portal](https://discord.com/developers/applications)
+2. Click **New Application** → give it a name (e.g. "Velocity Presence")
+3. Open the **Bot** tab and click **Reset Token**
+4. Copy the token (it won't be shown again!)
+5. Under **Privileged Gateway Intents**, enable:
+   - `GUILD_MEMBERS`
+   - `GUILD_PRESENCES`
+6. Use **OAuth2 → URL Generator** to create an invite link:
+   - Scopes: `bot`
+   - Permissions: `View Channels`
 
-### 2. Ortam Değişkenlerini Ayarla
+### 2. Configure Environment Variables
 
-```bash
-cp .env.example .env
-```
-
-`.env` dosyasını düzenle:
+Create a `.env` file inside `discord-bot/`:
 
 ```env
 DISCORD_BOT_TOKEN=your_bot_token_here
 BOT_API_PORT=4001
-BOT_API_SECRET=gizli_bir_anahtar_yaz   # Velocity backend ile aynı olmalı
-GUILD_ID=sunucu_id_si                  # Discord sunucunun ID'si
+BOT_API_SECRET=your_shared_secret     # Must match the Velocity backend
+GUILD_ID=your_server_id_here
 ```
 
-**Guild ID almak:** Discord'da Geliştirici Modunu aç (Ayarlar → Gelişmiş), sunucu adına sağ tıkla → "ID Kopyala"
+Edit the `.env` file with your values.
 
-### 3. Velocity Backend'i Yapılandır
+> **Getting your Guild ID:** Enable Developer Mode in Discord (Settings → Advanced), then right-click your server name → "Copy Server ID".
 
-`backend/.env` veya ortam değişkenlerine ekle:
+### 3. Configure the Velocity Backend
+
+Add the following to `backend/.env` or your environment:
 
 ```env
 BOT_API_URL=http://localhost:4001
-BOT_API_SECRET=gizli_bir_anahtar_yaz   # Bot ile aynı değer!
+BOT_API_SECRET=your_shared_secret     # Same value as above!
 ```
 
-### 4. Bağımlılıkları Kur ve Başlat
+### 4. Install Dependencies and Start
 
 ```bash
 cd discord-bot
@@ -59,41 +56,32 @@ npm install
 npm start
 ```
 
-### 5. Test Et
+## User Flow
 
-```bash
-curl "http://localhost:4001/health"
-curl -H "x-bot-secret: gizli_bir_anahtar_yaz" "http://localhost:4001/presence/DISCORD_USER_ID"
+1. User clicks **"Connect Discord"** on their Velocity profile
+2. Discord OAuth grants authorization; `discord_id` is saved to their account
+3. The user must be a member of the Discord server the bot is in (that's where it reads presences from)
+4. The Discord activity card appears automatically on their profile page
+
+## API Reference
+
+| Endpoint | Description |
+|---|---|
+| `GET /health` | Health check |
+| `GET /presence/:userId` | User activity (requires secret header) |
+| `GET /presence` | Full cache dump (admin) |
+
+**Auth header required for protected routes:**
+```
+x-bot-secret: YOUR_BOT_API_SECRET
 ```
 
-## Kullanıcı Akışı
+## Running in Production
 
-1. Kullanıcı Velocity profilinde **"Discord Bağla"** butonuna basar
-2. Discord OAuth ile yetkilendirme yapılır, `discord_id` hesaba kaydedilir
-3. Kullanıcının Discord sunucuna üye olması gerekir (bot oradaki aktiviteleri dinler)
-4. Profil sayfasında Discord aktivite kartı otomatik olarak görünür
+Use a process manager like [PM2](https://pm2.keymetrics.io/):
 
-## API Referansı
-
-| Endpoint | Açıklama |
-|----------|----------|
-| `GET /health` | Bot durumu |
-| `GET /presence/:userId` | Kullanıcı aktivitesi (secret header gerekli) |
-| `GET /presence` | Tüm cache (admin) |
-
-### Header
-
-```
-x-bot-secret: BOT_API_SECRET_DEĞERI
-```
-
-## Üretimde Çalıştırma
-
-PM2 ile:
 ```bash
 npm install -g pm2
 pm2 start bot.js --name velocity-bot
 pm2 save
 ```
-
-Systemd servisi olarak da kurabilirsin.

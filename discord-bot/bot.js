@@ -30,8 +30,8 @@ const API_SECRET = process.env.BOT_API_SECRET || 'velocity-bot-secret';
 const GUILD_ID = process.env.GUILD_ID;
 
 if (!BOT_TOKEN) {
-  console.error('❌  DISCORD_BOT_TOKEN ortam değişkeni eksik!');
-  console.error('    discord-bot/.env dosyası oluşturun ve token ekleyin.');
+  console.error('❌  DISCORD_BOT_TOKEN environment variable is missing!');
+  console.error('    Create a discord-bot/.env file and add your bot token.');
   process.exit(1);
 }
 
@@ -102,7 +102,7 @@ const client = new Client({
 });
 
 client.once('ready', () => {
-  console.log(`✅  Bot hazır: ${client.user.tag}`);
+  console.log(`✅  Bot ready: ${client.user.tag}`);
 
   // Pre-populate cache with all current members' presences
   if (GUILD_ID) {
@@ -113,7 +113,7 @@ client.once('ready', () => {
       });
       console.log(`📦  ${presenceCache.size} user presences loaded into cache`);
     } else {
-      console.warn(`⚠️  GUILD_ID (${GUILD_ID}) bulunamadı. Botun sunucuya eklendiğinden emin olun.`);
+      console.warn(`⚠️  GUILD_ID (${GUILD_ID}) not found. Make sure the bot has been added to your server.`);
     }
   }
 });
@@ -135,7 +135,7 @@ setInterval(() => {
 }, 10 * 60 * 1000);
 
 client.login(BOT_TOKEN).catch(err => {
-  console.error('❌  Bot giriş hatası:', err.message);
+  console.error('❌  Bot login error:', err.message);
   process.exit(1);
 });
 

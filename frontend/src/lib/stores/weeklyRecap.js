@@ -6,9 +6,9 @@ import { browser } from '$app/environment';
 const STORAGE_KEY = 'velocity-recap-days';
 
 export const RECAP_PRESETS = {
-  weekend: { label: 'Hafta sonu (Cmt-Paz)', days: [6, 0] },
-  sunday: { label: 'Sadece Pazar', days: [0] },
-  fri_weekend: { label: 'Cuma akşamından itibaren', days: [5, 6, 0] },
+  weekend:     { label: 'Weekend (Sat–Sun)',       days: [6, 0] },
+  sunday:      { label: 'Sunday only',              days: [0] },
+  fri_weekend: { label: 'Friday evening onward',   days: [5, 6, 0] },
 };
 
 function load() {

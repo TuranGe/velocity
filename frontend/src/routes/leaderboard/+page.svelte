@@ -2,7 +2,6 @@
   import { onMount, onDestroy } from 'svelte';
   import { fetchLeaderboard } from '$lib/stores/api';
   import { auth } from '$lib/stores/api';
-  import { t } from '$lib/stores/i18n';
   import UserAvatar from '$lib/components/UserAvatar.svelte';
   import { fly } from 'svelte/transition';
 
@@ -21,9 +20,9 @@
   let abortController = null;
 
   const PERIODS = [
-    { id: 'week',    label: 'period_week' },
-    { id: 'month',   label: 'period_month' },
-    { id: 'alltime', label: 'period_all' },
+    { id: 'week',    label: 'This Week' },
+    { id: 'month',   label: 'This Month' },
+    { id: 'alltime', label: 'All Time' },
   ];
 
   const RANK_ICONS = { 1:'🥇', 2:'🥈', 3:'🥉' };
@@ -97,9 +96,9 @@
 <div class="page">
   <div class="page-header">
     <div>
-      <span class="page-label font-mono">{$t('community')}</span>
-      <h1 class="page-title">{$t('leaderboard_title')}</h1>
-      <p class="page-sub">{$t('leaderboard_sub')}</p>
+      <span class="page-label font-mono">COMMUNITY</span>
+      <h1 class="page-title">Global Leaderboard</h1>
+      <p class="page-sub">This week's most focused developers</p>
     </div>
   </div>
 
@@ -108,13 +107,13 @@
     <div class="period-tabs">
       {#each PERIODS as p}
         <button class="period-tab font-mono" class:active={period===p.id}
-          on:click={() => onPeriodChange(p.id)}>{$t(p.label)}</button>
+          on:click={() => onPeriodChange(p.id)}>{p.label}</button>
       {/each}
     </div>
 
     <div class="search-wrap">
       <svg class="search-icon" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="11" cy="11" r="8"/><line x1="21" y1="21" x2="16.65" y2="16.65"/></svg>
-      <input class="search-input" bind:value={search} on:input={onSearchInput} placeholder={$t('search_users_placeholder')} />
+      <input class="search-input" bind:value={search} on:input={onSearchInput} placeholder="Search users..." />
       {#if search}
         <button class="search-clear" on:click={() => { search=''; load(); }}>✕</button>
       {/if}
@@ -124,10 +123,10 @@
   <!-- Leaderboard table -->
   <div class="lb-card" class:lb-fetching={loading && rows.length > 0}>
     <div class="lb-header font-mono">
-      <span>{$t('col_rank')}</span>
-      <span>{$t('col_user')}</span>
-      <span class="text-right">{$t('col_sessions')}</span>
-      <span class="text-right">{$t('col_hours')}</span>
+      <span>#</span>
+      <span>User</span>
+      <span class="text-right">Sessions</span>
+      <span class="text-right">Hours</span>
     </div>
 
     {#if loading && rows.length === 0}
@@ -148,16 +147,16 @@
           <div class="lb-user">
             <UserAvatar user={row} size={30} radius="8px" />
             <a class="lb-name" href={row.id === user?.id ? "/profile" : `/profile/${row.username}`}>{row.username}</a>
-            {#if row.id === user?.id}<span class="you-tag font-mono">{$t('you_label')}</span>{/if}
+            {#if row.id === user?.id}<span class="you-tag font-mono">You</span>{/if}
             {#if row.isMatch}<span class="match-tag font-mono">👈</span>{/if}
           </div>
           <span class="lb-val font-mono text-right">{row.sessions}</span>
-          <span class="lb-val font-mono text-right">{(row.total_seconds/3600).toFixed(1)}{$t('hour')}</span>
+          <span class="lb-val font-mono text-right">{(row.total_seconds/3600).toFixed(1)}h</span>
         </div>
       {/each}
     {:else if rows.length === 0}
       <div class="lb-empty">
-        {search ? `${$t('no_users_found')} for "${search}"` : $t('no_data_yet')}
+        {search ? `No users found for "${search}"` : 'No data yet'}
       </div>
     {:else}
       {#each rows as row, i (row.id)}
@@ -171,10 +170,10 @@
           <div class="lb-user">
             <UserAvatar user={row} size={30} radius="8px" />
             <a class="lb-name" href={row.id === user?.id ? "/profile" : `/profile/${row.username}`}>{row.username}</a>
-            {#if row.id === user?.id}<span class="you-tag font-mono">{$t('you_label')}</span>{/if}
+            {#if row.id === user?.id}<span class="you-tag font-mono">You</span>{/if}
           </div>
           <span class="lb-val font-mono text-right">{row.sessions}</span>
-          <span class="lb-val font-mono text-right">{(row.total_seconds/3600).toFixed(1)}{$t('hour')}</span>
+          <span class="lb-val font-mono text-right">{(row.total_seconds/3600).toFixed(1)}h</span>
         </div>
       {/each}
 
@@ -185,10 +184,10 @@
           <div class="lb-user">
             <UserAvatar user={user} size={30} radius="8px" />
             <a class="lb-name" href="/profile">{user.username}</a>
-            <span class="you-tag font-mono">{$t('you_label')}</span>
+            <span class="you-tag font-mono">You</span>
           </div>
           <span class="lb-val font-mono text-right">{myStats.sessions}</span>
-          <span class="lb-val font-mono text-right">{(myStats.total_seconds/3600).toFixed(1)}{$t('hour')}</span>
+          <span class="lb-val font-mono text-right">{(myStats.total_seconds/3600).toFixed(1)}h</span>
         </div>
       {/if}
     {/if}
@@ -196,7 +195,7 @@
 
   {#if !user}
     <div class="cta-bar">
-      <p>{$t('leaderboard_join_cta')} <a href="/">{$t('leaderboard_join_link')}</a> {$t('leaderboard_join_suffix')}</p>
+      <p>Join the leaderboard — <a href="/">log in</a> and start focusing!</p>
     </div>
   {/if}
 </div>

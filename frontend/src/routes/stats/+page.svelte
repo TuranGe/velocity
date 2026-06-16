@@ -2,7 +2,6 @@
   import { onMount } from 'svelte';
   import { tasks } from '$lib/stores/tasks';
   import { auth, userStats } from '$lib/stores/api';
-  import { t } from '$lib/stores/i18n';
   import { initGSAP, animateCounter } from '$lib/utils/gsap';
 
   let gsap, ScrollTrigger;
@@ -59,10 +58,10 @@
 <div class="stats-page">
   <div class="stats-container">
     <header class="stats-header">
-      <span class="stats-label font-mono">{$t('your_velocity')}</span>
-      <h1 class="stats-title">{$t('focus_stats')}</h1>
+      <span class="stats-label font-mono">YOUR VELOCITY</span>
+      <h1 class="stats-title">Focus Statistics</h1>
       <p class="stats-sub">
-        {$t('all_time_data')}
+        All-time productivity data
         {#if $auth.user}
           · <span class="user-tag">{$auth.user.username}</span>
         {/if}
@@ -72,30 +71,30 @@
     {#if !$auth.user}
       <div class="auth-wall">
         <div class="auth-wall-icon">🔒</div>
-        <h2 class="auth-wall-title">{$t('stats_locked')}</h2>
-        <p class="auth-wall-desc">{$t('stats_locked_desc')}</p>
-        <a href="/profile" class="auth-wall-btn font-mono">{$t('stats_sign_in')}</a>
+        <h2 class="auth-wall-title">Stats Locked</h2>
+        <p class="auth-wall-desc">Sign in to see your focus time, completed sessions, and progress data.</p>
+        <a href="/profile" class="auth-wall-btn font-mono">Sign In →</a>
       </div>
     {:else}
 
     <div class="big-stats">
       <div class="stat-card primary">
-        <div class="stat-num font-mono" data-counter={totalSessions} data-suffix="">0</div>
-        <div class="stat-label">{$t('completed_sessions')}</div>
+        <div class="stat-num font-mono" data-counter={totalSessions} data-suffix="">{totalSessions}</div>
+        <div class="stat-label">Completed Sessions</div>
       </div>
       <div class="stat-card">
-        <div class="stat-num font-mono" data-counter={totalMinutes} data-suffix="">0</div>
-        <div class="stat-label">{$t('minutes_focused')}</div>
+        <div class="stat-num font-mono" data-counter={totalMinutes} data-suffix="">{totalMinutes}</div>
+        <div class="stat-label">Minutes Focused</div>
       </div>
       <div class="stat-card">
-        <div class="stat-num font-mono" data-counter={parseFloat(totalHours)} data-suffix="">0</div>
-        <div class="stat-label">{$t('hours_label')}</div>
+        <div class="stat-num font-mono" data-counter={parseFloat(totalHours)} data-suffix="">{totalHours}</div>
+        <div class="stat-label">Hours</div>
       </div>
     </div>
 
     <div class="progress-section">
       <div class="progress-header">
-        <span class="progress-label font-mono">{$t('task_completion')}</span>
+        <span class="progress-label font-mono">TASK COMPLETION</span>
         <span class="progress-pct font-mono text-accent">{completionPct}%</span>
       </div>
       <div class="progress-track">
@@ -103,17 +102,17 @@
           role="progressbar" aria-valuenow={completionPct} aria-valuemin="0" aria-valuemax="100"></div>
       </div>
       <div class="progress-footer">
-        <span>{doneTasks} {$t('done_label')}</span>
-        <span>{totalTasks - doneTasks} {$t('remaining_label')}</span>
+        <span>{doneTasks} done</span>
+        <span>{totalTasks - doneTasks} left</span>
       </div>
     </div>
 
     <div class="breakdown-section">
-      <h2 class="section-heading font-mono">{$t('session_breakdown')}</h2>
+      <h2 class="section-heading font-mono">Session Breakdown</h2>
       <div class="breakdown-bars">
         {#each [
-          { label: $t('completed_sessions'), value: totalSessions, max: Math.max(totalSessions, 10) },
-          { label: $t('tasks_completed_stat'), value: doneTasks, max: Math.max(totalTasks, 10) },
+          { label: 'Completed Sessions', value: totalSessions, max: Math.max(totalSessions, 10) },
+          { label: 'Tasks Completed',    value: doneTasks,     max: Math.max(totalTasks, 10) },
         ] as item}
           <div class="breakdown-row">
             <span class="breakdown-label">{item.label}</span>
@@ -131,7 +130,7 @@
       <cite class="quote-cite font-mono">— Mark Twain</cite>
     </div>
 
-    <a href="/" class="btn-back">{$t('back_to_timer')}</a>
+    <a href="/" class="btn-back">← Back to Timer</a>
     {/if}
   </div>
 </div>

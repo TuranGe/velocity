@@ -2,9 +2,6 @@
   import { onMount } from 'svelte';
   import { theme } from '$lib/stores/theme';
   import { initGSAP } from '$lib/utils/gsap';
-  import { t } from '$lib/stores/i18n';
-
-
   let btnEl;
   let iconEl;
   let gsap;
@@ -51,8 +48,8 @@
   bind:this={btnEl}
   class="theme-toggle"
   on:click={handleToggle}
-  aria-label={$t('toggle_theme')}
-  title={$theme === 'dark' ? $t('switch_to_light_mode') : $t('switch_to_dark_mode')}
+  aria-label="toggle theme"
+  title={$theme === 'dark' ? 'Switch to light mode' : 'Switch to dark mode'}
 >
   <span bind:this={iconEl} class="icon-wrap" style="transform-style: preserve-3d;">
     {#if $theme === 'dark'}

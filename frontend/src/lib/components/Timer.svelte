@@ -8,8 +8,6 @@
   import { notifyTimerComplete, notifyLongBreakSuggestion, isNotificationSupported, getPermission, requestNotificationPermission } from '$lib/utils/notifications';
   import { toast } from '$lib/stores/toast';
   import ShortcutsOverlay from './ShortcutsOverlay.svelte';
-  import { t } from '$lib/stores/i18n';
-
   let showShortcuts = false;
 
   let gsap;
@@ -127,8 +125,8 @@
     localStorage.setItem(NOTIF_PROMPT_KEY, '1');
 
     toast.withAction(
-      $t('timer_notif_prompt'),
-      { label: $t('timer_notif_enable'), onClick: () => requestNotificationPermission() },
+      "🔔 Want notifications when the timer finishes?",
+      { label: "Enable", onClick: () => requestNotificationPermission() },
       'info'
     );
   }
@@ -136,7 +134,7 @@
   // After 4 completed focus sessions, suggest a long break.
   $: if ($timer.suggestLongBreak) {
     timer.clearLongBreakSuggestion();
-    toast.info($t('timer_long_break_suggestion'), 6000);
+    toast.info("🎉 4 focus sessions complete! Time for a long break.", 6000);
     notifyLongBreakSuggestion();
   }
 
@@ -228,7 +226,7 @@
         class:active={$timer.mode === mode.id}
         disabled={$timer.status === 'running'}
         on:click={() => handleModeChange(mode.id)}
-        title={$timer.status === 'running' ? $t('timer_mode_running_hint') : `${$t('timer_shortcut_hint')}: ${mode.shortcut}`}
+        title={$timer.status === 'running' ? 'Stop the timer before switching modes' : `Shortcut: ${mode.shortcut}`}
       >
         {mode.label}
         <span class="mode-shortcut">{mode.shortcut}</span>
@@ -236,23 +234,24 @@
     {/each}
   </div>
   <p class="sr-only" aria-live="polite">
-    {$timer.status === 'running' ? $t('timer_status_running') : ''}
+    {$timer.status === 'running' ? 'Timer is running. Stop or reset before changing modes.' : ''}
   </p>
 
   {#if showCustomInput}
     <div class="custom-input-row">
+      <!-- svelte-ignore a11y-autofocus -->
       <input
         class="custom-min-input"
         type="number"
         bind:value={customMinutes}
         min="1"
         max="180"
-        placeholder={$t('minutes_placeholder')}
+        placeholder="Minutes"
         on:keydown={e => e.key === 'Enter' && applyCustomDuration()}
         autofocus
       />
-      <span class="custom-unit">{$t('minute')}</span>
-      <button class="custom-apply" on:click={applyCustomDuration}>{$t('start')}</button>
+      <span class="custom-unit">m</span>
+      <button class="custom-apply" on:click={applyCustomDuration}>Start</button>
       <button class="custom-cancel" on:click={() => showCustomInput = false}>✕</button>
     </div>
   {/if}
@@ -344,20 +343,20 @@
   <div class="timer-stats">
     <div class="stat-item">
       <span class="stat-value font-mono">{$auth.user ? $userStats.totalSessions : $timer.completedSessions}</span>
-      <span class="stat-label">{$t('session')}</span>
+      <span class="stat-label">Session</span>
     </div>
     <div class="stat-divider"></div>
     <div class="stat-item">
       <span class="stat-value font-mono">{$auth.user ? $userStats.totalMinutes : Math.floor($timer.totalFocusTime / 60)}</span>
-      <span class="stat-label">{$t('timer_minutes_focused')}</span>
+      <span class="stat-label">Minutes focused</span>
     </div>
   </div>
 
-  <button class="keyboard-hint" on:click={() => showShortcuts = true} title={$t('timer_see_shortcuts')}>
-    <kbd>Space</kbd> {$t('timer_start_pause')} &nbsp;·&nbsp;
-    <kbd>R</kbd> {$t('timer_reset')} &nbsp;·&nbsp;
-    <kbd>F</kbd> / <kbd>S</kbd> / <kbd>L</kbd> {$t('timer_modes')} &nbsp;·&nbsp;
-    <kbd>?</kbd> {$t('timer_all_shortcuts')}
+  <button class="keyboard-hint" on:click={() => showShortcuts = true} title="View all shortcuts">
+    <kbd>Space</kbd> timer start / pause &nbsp;·&nbsp;
+    <kbd>R</kbd> timer reset &nbsp;·&nbsp;
+    <kbd>F</kbd> / <kbd>S</kbd> / <kbd>L</kbd> timer modes &nbsp;·&nbsp;
+    <kbd>?</kbd> all shortcuts
   </button>
 </section>
 

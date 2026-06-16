@@ -1,6 +1,6 @@
 // ── YouTube Ambient Player ────────────────────────────────────
-// YouTube IFrame API üzerinden telifsiz müzik çalar.
-// Üç hazır track + kullanıcının yapıştırdığı herhangi bir YouTube URL'i.
+// Plays royalty-free music via the YouTube IFrame API.
+// Three preset tracks + any YouTube URL the user pastes in.
 
 export const YOUTUBE_TRACKS = {
   lofi: {
@@ -43,13 +43,13 @@ export function createAmbientEngine() {
   let apiReady = false;
   let pendingPlay = false;
 
-  // YouTube IFrame API'yi bir kez yükle
+  // Load the YouTube IFrame API once
   function loadAPI() {
     if (window.YT && window.YT.Player) { apiReady = true; return Promise.resolve(); }
     return new Promise(resolve => {
       const existing = document.getElementById('yt-api-script');
       if (existing) {
-        // Script zaten yükleniyor, callback'i bekle
+        // Script already loading — just wait for the callback
         const prev = window.onYouTubeIframeAPIReady;
         window.onYouTubeIframeAPIReady = () => { prev?.(); apiReady = true; resolve(); };
         return;
@@ -115,7 +115,7 @@ export function createAmbientEngine() {
   }
 
   function resolveVideoId(trackIdOrCustomId) {
-    // Önce hazır track listesine bak, yoksa doğrudan video ID olarak kullan
+    // Check preset track list first; otherwise treat the value as a raw video ID
     return YOUTUBE_TRACKS[trackIdOrCustomId]?.id ?? trackIdOrCustomId;
   }
 

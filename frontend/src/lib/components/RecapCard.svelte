@@ -3,7 +3,6 @@
   import { toast } from '$lib/stores/toast';
   import { auth } from '$lib/stores/api';
   import { getCachedProfilePhoto } from '$lib/utils/profilePhotoCache';
-  import { t } from '$lib/stores/i18n';
   import { formatFocusTime } from '$lib/utils/weeklyStats';
 
   // Presentational 600x320 "recap card" — shared by ShareCard (manual
@@ -25,7 +24,7 @@
   export let doneTasks = 0;
   export let chartDays = []; // [{ label, minutes, isToday }]
   export let currentStreak = 0;
-  export let periodLabel = ''; // e.g. "SON 7 GÜN" or "GEÇEN HAFTA" — defaults via i18n
+  export let periodLabel = ''; // e.g. "LAST 7 DAYS" or "LAST WEEK"
   export let filenameSuffix = 'stats';
   export let hideButton = false;
 
@@ -39,7 +38,7 @@
 
   $: resolvedImage = profileImage || $auth.user?.profile_image || getCachedProfilePhoto() || '';
   $: chartMax = Math.max(...(chartDays.map(d => d.minutes)), 1);
-  $: resolvedPeriodLabel = periodLabel || $t('recap_last_7_days');
+  $: resolvedPeriodLabel = periodLabel || "LAST 7 DAYS";
 
   function updateScale() {
     if (!wrapEl) return;
@@ -83,7 +82,7 @@
       canvas.toBlob((blob) => {
         if (!blob) {
           downloading = false;
-          toast.warn?.($t('recap_download_failed'));
+          toast.warn?.("Couldn't create the card, try again");
           return;
         }
         const link = document.createElement('a');
@@ -92,11 +91,11 @@
         link.click();
         setTimeout(() => URL.revokeObjectURL(link.href), 2000);
         downloading = false;
-        toast.success?.($t('recap_downloaded'));
+        toast.success?.("Card downloaded! 🎉");
       }, 'image/png');
     } catch (e) {
       downloading = false;
-      toast.warn?.($t('recap_download_failed'));
+      toast.warn?.("Couldn't create the card, try again");
     }
   }
 </script>
@@ -106,7 +105,7 @@
     <div
       class="recap-card"
       bind:this={cardEl}
-      style="width: {CARD_W}px; height: {CARD_H}px; transform: scale({scale});"
+      style="width: CARD_Wpx; height: CARD_Hpx; transform: scale({scale});"
     >
       <!-- Header -->
       <div class="rc-header">
@@ -124,12 +123,12 @@
         </div>
         <div class="rc-identity">
           <div class="rc-username">{username}</div>
-          <div class="rc-tagline">VELOCITY · {$t('recap_tagline')}</div>
+          <div class="rc-tagline">VELOCITY · WEEKLY RECAP</div>
         </div>
 
         <div class="rc-header-right">
           {#if currentStreak > 0}
-            <div class="rc-streak" class:hot={currentStreak >= 7}>🔥 <span>{currentStreak} {$t('recap_day_streak')}</span></div>
+            <div class="rc-streak" class:hot={currentStreak >= 7}>🔥 <span>{currentStreak} DAY STREAK</span></div>
           {/if}
           <div class="rc-logo">
             <svg viewBox="0 0 28 28" width="28" height="28" xmlns="http://www.w3.org/2000/svg">
@@ -146,15 +145,15 @@
       <div class="rc-stats">
         <div class="rc-stat">
           <div class="rc-stat-value accent">{displayTime}</div>
-          <div class="rc-stat-label">{$t('recap_hours_focus')}</div>
+          <div class="rc-stat-label">FOCUS TIME</div>
         </div>
         <div class="rc-stat">
           <div class="rc-stat-value">{totalSessions}</div>
-          <div class="rc-stat-label">{$t('recap_sessions')}</div>
+          <div class="rc-stat-label">SESSIONS</div>
         </div>
         <div class="rc-stat">
           <div class="rc-stat-value">{doneTasks}</div>
-          <div class="rc-stat-label">{$t('recap_tasks_done')}</div>
+          <div class="rc-stat-label">TASKS DONE</div>
         </div>
       </div>
 
@@ -185,7 +184,7 @@
 
 <div class="recap-actions" class:hidden={hideButton}>
   <button class="btn-download" on:click={downloadCard} disabled={downloading}>
-    {downloading ? $t('recap_preparing') : $t('recap_download_png')}
+    {downloading ? "Preparing..." : "Download"}
   </button>
 </div>
 
@@ -211,9 +210,6 @@
      any screen width, instead of text overlapping when the
      container shrinks. */
   .recap-card {
-    position: absolute;
-    top: 0; left: 0;
-    transform-origin: top left;
     border-radius: 20px;
     padding: 26px 26px 22px;
     background: linear-gradient(135deg, #1a1a1a 0%, #0d0d0d 100%);

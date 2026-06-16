@@ -8,20 +8,18 @@
   import Toaster from '$lib/components/Toaster.svelte';
   import WeeklySummaryModal from '$lib/components/WeeklySummaryModal.svelte';
   import { initGSAP } from '$lib/utils/gsap';
-  import { lang } from '$lib/stores/i18n';
-  import { t } from '$lib/stores/i18n';
   import { auth, userStats } from '$lib/stores/api';
 
   let gsap;
   let wipeEl;
   let isWiping = false;
 
-  $: tabs = [
-    { href: '/',            icon: '⏱', label: $t('timer') },
-    { href: '/stats',       icon: '📊', label: $t('stats') },
-    { href: '/leaderboard', icon: '🏆', label: $t('leaderboard') },
-    { href: '/teams',       icon: '🤝', label: $t('teams') },
-    { href: '/profile',     icon: '👤', label: $t('profile') },
+  const tabs = [
+    { href: '/',            icon: '⏱', label: 'Timer' },
+    { href: '/stats',       icon: '📊', label: 'Stats' },
+    { href: '/leaderboard', icon: '🏆', label: 'Leaderboard' },
+    { href: '/teams',       icon: '🤝', label: 'Teams' },
+    { href: '/profile',     icon: '👤', label: 'Profile' },
   ];
 
   function doThemeWipe(callback) {
@@ -45,8 +43,6 @@
   onMount(async () => {
     theme.init();
     if (browser) {
-      const savedLang = localStorage.getItem('velocity-lang');
-      if (savedLang) lang.set(savedLang);
       // Validate any session restored from localStorage — if the token
       // is invalid/expired or the account no longer exists, this logs
       // the user out so the UI doesn't show a "logged in" state that

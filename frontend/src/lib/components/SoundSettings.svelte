@@ -1,7 +1,6 @@
 <script>
   import Modal from './Modal.svelte';
   import { audio } from '$lib/stores/audio';
-  import { t } from '$lib/stores/i18n';
   import { YOUTUBE_TRACKS, extractVideoId } from '$lib/utils/ambientAudio';
   import {
     notificationsEnabled,
@@ -25,8 +24,8 @@
   function handleCustomPlay() {
     customError = '';
     const videoId = extractVideoId(customUrl);
-    if (!videoId) { customError = 'Geçerli bir YouTube linki gir.'; return; }
-    onTrackChange(videoId); // video ID'yi doğrudan geçir
+    if (!videoId) { customError = 'Please enter a valid YouTube link.'; return; }
+    onTrackChange(videoId); // pass the video ID directly
     if (!musicPlaying) toggleMusic();
     customUrl = '';
   }
@@ -57,11 +56,11 @@
 
 <Modal {show} on:close>
   <button class="modal-close" on:click={() => show = false}>✕</button>
-  <h3 class="modal-title font-mono">{$t('sound_settings_title')}</h3>
+  <h3 class="modal-title font-mono">🔊 Sound Settings</h3>
   
   <div class="settings-section">
     <!-- svelte-ignore a11y-label-has-associated-control -->
-    <label class="setting-label">{$t('sound_volume_label')}</label>
+    <label class="setting-label">Music Volume</label>
     <div class="volume-control">
       <span class="volume-icon">🔇</span>
       <input 
@@ -82,7 +81,7 @@
 
   <div class="settings-section">
     <!-- svelte-ignore a11y-label-has-associated-control -->
-    <label class="setting-label">{$t('sound_environment_label')}</label>
+    <label class="setting-label">Environment Sound</label>
     <div class="track-grid">
       {#each TRACKS as track}
         <button
@@ -98,12 +97,12 @@
 
   <div class="settings-section">
     <!-- svelte-ignore a11y-label-has-associated-control -->
-    <label class="setting-label">{$t('sound_youtube_label')}</label>
+    <label class="setting-label">🎵 Music from YouTube</label>
     <div class="custom-url-row">
       <input
         class="custom-url-input"
         type="text"
-        placeholder="{$t('sound_youtube_placeholder')}"
+        placeholder="Paste YouTube link..."
         bind:value={customUrl}
         on:keydown={handleCustomKey}
       />
@@ -120,14 +119,14 @@
         class="music-btn"
         class:playing={musicPlaying}
         on:click={toggleMusic}
-        title={musicPlaying ? $t('music_off') : $t('music_on')}
+        title={musicPlaying ? 'Stop music' : 'Ambient music on'}
       >
         {#if musicPlaying}
           <span class="music-icon">⏸</span>
-          {$t('music_off')}
+          Stop music
         {:else}
           <span class="music-icon">▶</span>
-          {$t('music_on')}
+          Ambient music on
         {/if}
       </button>
     </div>
@@ -135,11 +134,11 @@
 
   <div class="settings-section">
     <!-- svelte-ignore a11y-label-has-associated-control -->
-    <label class="setting-label">🔔 {$t('notifications_label')}</label>
+    <label class="setting-label">🔔 Notifications</label>
     {#if !notifSupported}
-      <p class="setting-hint">{$t('sound_notif_unsupported')}</p>
+      <p class="setting-hint">Your browser does not support notifications.</p>
     {:else if notifPermission === 'denied'}
-      <p class="setting-hint">{$t('notif_denied')}</p>
+      <p class="setting-hint">Notification permission denied. Please enable it in your browser settings.</p>
     {:else}
       <button
         class="music-btn"
@@ -148,18 +147,18 @@
       >
         {#if notifPermission === 'granted' && $notificationsEnabled}
           <span class="music-icon">🔔</span>
-          {$t('notif_on')}
+          Notifications On
         {:else}
           <span class="music-icon">🔕</span>
-          {$t('notif_off')}
+          Notifications Off
         {/if}
       </button>
-      <p class="setting-hint">{$t('sound_notif_hint')}</p>
+      <p class="setting-hint">Get notified when the timer finishes or a task completes, even when the tab is in the background.</p>
     {/if}
   </div>
 
   <div class="modal-actions">
-    <button class="btn-accent" on:click={() => show = false}>{$t('shortcut_close')}</button>
+    <button class="btn-accent" on:click={() => show = false}>Close</button>
   </div>
 </Modal>
 

@@ -13,7 +13,6 @@
     joinTeamByCode,
   } from "$lib/stores/api";
   import { toast } from "$lib/stores/toast";
-  import { t } from "$lib/stores/i18n";
   import { browser } from "$app/environment";
   import { fly } from "svelte/transition";
   import UserAvatar from "$lib/components/UserAvatar.svelte";
@@ -114,12 +113,12 @@
 
   async function quickJoin(team) {
     if (!user) {
-      toast.warn($t('sign_in_first'));
+      toast.warn("Sign in first to join a team");
       return;
     }
     try {
       await joinTeamByCode(team.invite_code);
-      toast.success(`${$t('joined_team')} "${team.name}"!`);
+      toast.success(`Joined "${team.name}"!`);
       await loadTeams();
     } catch (e) {
       toast.error(e.message);
@@ -144,23 +143,23 @@
   const features = [
     {
       icon: "⚡",
-      title: $t('feat_focus_title'),
-      desc: $t('feat_focus_desc'),
+      title: "Deep Focus",
+      desc: "Structured 25-minute sessions help you enter flow state and stay there.",
     },
     {
       icon: "📊",
-      title: $t('feature_track_progress'),
-      desc: $t('feature_track_progress_desc'),
+      title: "Track Progress",
+      desc: "Monitor completed sessions and total focus time across all your work.",
     },
     {
       icon: "🎯",
-      title: $t('feature_task_linked'),
-      desc: $t('feature_task_linked_desc'),
+      title: "Task-Linked",
+      desc: "Attach tasks to sessions. Check them off as you power through your list.",
     },
     {
       icon: "🌗",
-      title: $t('feature_adaptive_theme'),
-      desc: $t('feature_adaptive_theme_desc'),
+      title: "Adaptive Theme",
+      desc: "Dark and light modes that adapt to your environment and preference.",
     },
   ];
 
@@ -209,14 +208,14 @@
     </div>
 
     <div class="hero-header">
-      <div class="hero-badge font-mono">{$t("hero_badge")}</div>
+      <div class="hero-badge font-mono">v1.0 — FOCUS SYSTEM</div>
       <h1 class="hero-title">
-        {$t("hero_title_1")}<br /><span class="accent-text"
-          >{$t("hero_title_2")}</span
+        Build faster.<br /><span class="accent-text"
+          >Stay in flow.</span
         >
       </h1>
       <p class="hero-tagline font-mono" bind:this={taglineEl}>
-        {$t("hero_tagline")}
+        A minimal focus timer engineered for developers.
       </p>
     </div>
 
@@ -229,8 +228,8 @@
   <!-- ── Features ──────────────────────────────────────────── -->
   <section class="section">
     <div class="section-header">
-      <span class="section-label font-mono">{$t("why_velocity")}</span>
-      <h2 class="section-title">{$t("engineered")}</h2>
+      <span class="section-label font-mono">WHY VELOCITY</span>
+      <h2 class="section-title">Engineered for deep work</h2>
     </div>
     <div class="features-grid">
       {#each features as f}
@@ -250,15 +249,15 @@
       <div class="preview-panel">
         <div class="preview-head">
           <div>
-            <span class="section-label font-mono">{$t("community")}</span>
-            <h2 class="preview-title">{$t("leaderboard_title")}</h2>
+            <span class="section-label font-mono">COMMUNITY</span>
+            <h2 class="preview-title">Global Leaderboard</h2>
           </div>
-          <a href="/leaderboard" class="see-all-btn font-mono">{$t('see_all')}</a>
+          <a href="/leaderboard" class="see-all-btn font-mono">See all →</a>
         </div>
 
         <!-- Period tabs -->
         <div class="period-tabs">
-          {#each [["week", $t("period_week")], ["month", $t("period_month")], ["alltime", $t("period_all")]] as [val, label]}
+          {#each [["week", "This Week"], ["month", "This Month"], ["alltime", "All Time"]] as [val, label]}
             <button
               class="period-tab font-mono"
               class:active={lbPeriod === val}
@@ -269,8 +268,8 @@
 
         <div class="lb-wrap" class:lb-fetching={lbLoading && leaderboard.length > 0}>
           <div class="lb-col-header font-mono">
-            <span>{$t('col_rank')}</span><span>{$t('col_user')}</span><span class="tr">{$t('col_sessions')}</span><span
-              class="tr">{$t('col_hours')}</span
+            <span>#</span><span>User</span><span class="tr">Sessions</span><span
+              class="tr">Hours</span
             >
           </div>
           {#if lbLoading && leaderboard.length === 0}
@@ -295,7 +294,7 @@
                 </div>
                 <span class="lb-val font-mono tr">{row.sessions}</span>
                 <span class="lb-val font-mono tr"
-                  >{(row.total_seconds / 3600).toFixed(1)}{$t('hour')}</span
+                  >{(row.total_seconds / 3600).toFixed(1)}h</span
                 >
               </div>
             {/each}
@@ -304,13 +303,13 @@
                 <span class="lb-rank font-mono">–</span>
                 <div class="lb-user">
                   <span>👤</span>
-                  <a href="/" class="lb-join-link">{$t("join_leaderboard")}</a>
+                  <a href="/" class="lb-join-link">Join</a>
                 </div>
                 <span class="lb-val font-mono tr"
                   >{$timer.completedSessions}</span
                 >
                 <span class="lb-val font-mono tr"
-                  >{($timer.totalFocusTime / 3600).toFixed(1)}{$t('hour')}</span
+                  >{($timer.totalFocusTime / 3600).toFixed(1)}h</span
                 >
               </div>
             {/if}
@@ -322,10 +321,10 @@
       <div class="preview-panel">
         <div class="preview-head">
           <div>
-            <span class="section-label font-mono">{$t("teams_label")}</span>
-            <h2 class="preview-title">{$t('top_teams')}</h2>
+            <span class="section-label font-mono">TEAMS</span>
+            <h2 class="preview-title">Top Teams</h2>
           </div>
-          <a href="/teams" class="see-all-btn font-mono">{$t('see_all')}</a>
+          <a href="/teams" class="see-all-btn font-mono">See all →</a>
         </div>
 
         {#if teamsLoading}
@@ -346,7 +345,7 @@
                     <div class="team-row-name">{team.name}</div>
                     <div class="team-row-meta font-mono">
                       {CATEGORY_ICONS[team.category] || "⚡"}
-                      {team.category} · {team.member_count} {$t('members_count')}
+                      {team.category} · {team.member_count} members
                     </div>
                   </div>
                 </div>
@@ -357,12 +356,12 @@
                     title="Copy invite code">{team.invite_code}</button
                   >
                   {#if isMember}
-                    <span class="member-chip font-mono">{$t('joined_label')}</span>
+                    <span class="member-chip font-mono">Joined</span>
                   {:else if user}
                     <button
                       class="join-chip"
                       style="border-color:{team.color};color:{team.color}"
-                      on:click={() => quickJoin(team)}>{$t('join_label')}</button
+                      on:click={() => quickJoin(team)}>Join</button
                     >
                   {/if}
                 </div>
@@ -376,12 +375,12 @@
 
   <footer class="site-footer">
     <span class="footer-text font-mono"
-      >{$t("footer_built")} ·
+      >Built with SvelteKit & GSAP ·
       <a href="https://github.com" target="_blank" rel="noopener">GitHub</a
       ></span
     >
     <span class="footer-session font-mono"
-      >{$t("footer_sessions")}
+      >Sessions today:
       <span class="text-accent">{user ? $userStats.totalSessions : $timer.completedSessions}</span></span
     >
   </footer>
@@ -459,7 +458,7 @@
     position: relative;
     z-index: 1;
     display: flex;
-    flex-wrap: wrap;
+    flex-wrap: nowrap;
     align-items: flex-start;
     justify-content: center;
     gap: 2.5rem;

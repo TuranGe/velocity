@@ -1,8 +1,6 @@
 <script>
   import { fade, scale } from 'svelte/transition';
   import { browser } from '$app/environment';
-  import { t } from '$lib/stores/i18n';
-
   export let show = false;
 
   // Attach the node directly to <body> so the overlay renders above everything,
@@ -16,28 +14,28 @@
   }
 
   // Shortcut groups are derived reactively so they re-render on language change.
-  $: SHORTCUT_GROUPS = [
+  const SHORTCUT_GROUPS = [
     {
-      title: $t('shortcut_group_timer'),
+      title: 'Timer',
       items: [
-        { keys: ['Space'], desc: $t('shortcut_start_pause') },
-        { keys: ['R'],     desc: $t('shortcut_reset') },
+        { keys: ['Space'], desc: 'Start / Pause' },
+        { keys: ['R'],     desc: 'Reset' },
       ],
     },
     {
-      title: $t('shortcut_group_modes'),
+      title: 'Switch Mode',
       items: [
-        { keys: ['F'], desc: $t('focus') },
-        { keys: ['S'], desc: $t('short_break') },
-        { keys: ['L'], desc: $t('long_break') },
-        { keys: ['C'], desc: $t('custom') },
+        { keys: ['F'], desc: 'Focus' },
+        { keys: ['S'], desc: 'Short Break' },
+        { keys: ['L'], desc: 'Long Break' },
+        { keys: ['C'], desc: 'Custom' },
       ],
     },
     {
-      title: $t('shortcut_group_general'),
+      title: 'General',
       items: [
-        { keys: ['?'],   desc: $t('shortcut_toggle_help') },
-        { keys: ['Esc'], desc: $t('shortcut_close') },
+        { keys: ['?'],   desc: 'Show / hide this guide' },
+        { keys: ['Esc'], desc: 'Close' },
       ],
     },
   ];
@@ -59,8 +57,8 @@
   <div use:portal class="shortcuts-backdrop" on:click={handleBackdropClick} transition:fade={{ duration: 150 }}>
     <div class="shortcuts-modal" transition:scale={{ duration: 200, start: 0.95, opacity: 0 }}>
       <div class="shortcuts-header">
-        <h2>⌨️ {$t('shortcut_title')}</h2>
-        <button class="shortcuts-close" on:click={() => show = false} aria-label={$t('shortcut_close')}>✕</button>
+        <h2>⌨️ Keyboard Shortcuts</h2>
+        <button class="shortcuts-close" on:click={() => show = false} aria-label="Close">✕</button>
       </div>
 
       <div class="shortcuts-body">
@@ -83,7 +81,7 @@
       </div>
 
       <p class="shortcuts-footer">
-        {$t('shortcut_reopen_hint')} <kbd>?</kbd>
+        Press <kbd>?</kbd>
       </p>
     </div>
   </div>

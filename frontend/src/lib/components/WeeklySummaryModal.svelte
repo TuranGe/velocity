@@ -5,7 +5,6 @@
   import Modal from './Modal.svelte';
   import RecapCard from './RecapCard.svelte';
   import { auth, fetchLastWeekStats } from '$lib/stores/api';
-  import { t, lang } from '$lib/stores/i18n';
   import { computeWeeklyStats } from '$lib/utils/weeklyStats';
 
   const STORAGE_KEY = 'velocity-weekly-summary-seen';
@@ -70,13 +69,13 @@
 <Modal bind:show wide on:close={close}>
   <div class="ws-head">
     <div>
-      <span class="panel-eyebrow">{$t('weekly_summary_label')}</span>
-      <h3 class="modal-title">{$t('weekly_summary_title')}</h3>
+      <span class="panel-eyebrow">WEEKLY RECAP</span>
+      <h3 class="modal-title">Your week in focus</h3>
     </div>
     <button class="modal-close" on:click={close}>✕</button>
   </div>
 
-  <p class="ws-sub">{$t('weekly_summary_sub_monday')}</p>
+  <p class="ws-sub">Here's a recap of last week. Have a great new week!</p>
 
   <RecapCard
     {username}
@@ -87,7 +86,7 @@
     doneTasks={stats.tasksCompleted}
     chartDays={stats.chartDays}
     currentStreak={stats.currentStreak}
-    periodLabel={$t('recap_last_week')}
+    periodLabel="LAST WEEK"
     filenameSuffix="weekly-recap"
   />
 </Modal>

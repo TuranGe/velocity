@@ -39,10 +39,10 @@ export function setNotificationsEnabled(enabled) {
 }
 
 const MODE_MESSAGES = {
-  'focus':       { title: '🎯 Focus tamamlandı!', body: 'Harika iş! Şimdi kısa bir ara ver.' },
-  'short-break': { title: '☕ Mola bitti', body: 'Yenilendin mi? Focus oturumuna geri dön.' },
-  'long-break':  { title: '🌿 Uzun mola bitti', body: 'Hazır olduğunda yeni bir focus başlat.' },
-  'custom':      { title: '⏱ Süre tamamlandı!', body: 'Oturumun tamamlandı.' },
+  'focus':       { title: '🎯 Focus session complete!', body: 'Great work! Time for a short break.' },
+  'short-break': { title: '☕ Break over',              body: 'Refreshed? Head back to your focus session.' },
+  'long-break':  { title: '🌿 Long break over',         body: 'Start a new focus session whenever you\'re ready.' },
+  'custom':      { title: '⏱ Session complete!',        body: 'Your session has ended.' },
 };
 
 // Show a notification when a timer session completes.
@@ -82,7 +82,7 @@ export function notifyTaskComplete(taskText) {
   if (document.visibilityState === 'visible') return;
 
   try {
-    const n = new Notification('✅ Görev tamamlandı!', {
+    const n = new Notification('✅ Task complete!', {
       body: taskText,
       icon: '/favicon.png',
       tag: 'velocity-task',
@@ -101,8 +101,8 @@ export function notifyLongBreakSuggestion() {
   if (document.visibilityState === 'visible') return;
 
   try {
-    const n = new Notification('🎉 4 oturum tamamlandı!', {
-      body: 'Uzun bir ara vermenin zamanı geldi.',
+    const n = new Notification('🎉 4 sessions complete!', {
+      body: 'Time to take a long break.',
       icon: '/favicon.png',
       tag: 'velocity-long-break',
     });
