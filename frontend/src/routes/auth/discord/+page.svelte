@@ -15,7 +15,7 @@
       const mode = $page.url.searchParams.get('state');
 
       if (!code) {
-        error = 'No authorization code received';
+        error = $t('auth_discord_no_code');
         loading = false;
         return;
       }
@@ -43,7 +43,7 @@
         goto('/');
       }
     } catch (e) {
-      error = e.message || 'Authentication failed';
+      error = e.message || $t('auth_discord_error_message');
       loading = false;
     }
   });
@@ -53,14 +53,14 @@
   {#if loading}
     <div class="loading">
       <div class="spinner"></div>
-      <span>Discord ile bağlanıyor...</span>
+      <span>{$t('auth_discord_loading')}</span>
     </div>
   {:else if error}
     <div class="error-card">
       <div class="error-icon">⚠️</div>
-      <h2>Bağlantı başarısız</h2>
+      <h2>{$t('auth_discord_error_title')}</h2>
       <p>{error}</p>
-      <a href="/">← Ana sayfaya dön</a>
+      <a href="/">← {$t('auth_discord_return_home')}</a>
     </div>
   {/if}
 </div>

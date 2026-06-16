@@ -57,11 +57,11 @@
 
 <Modal {show} on:close>
   <button class="modal-close" on:click={() => show = false}>✕</button>
-  <h3 class="modal-title font-mono">🔊 Ses Ayarları</h3>
+  <h3 class="modal-title font-mono">{$t('sound_settings_title')}</h3>
   
   <div class="settings-section">
     <!-- svelte-ignore a11y-label-has-associated-control -->
-    <label class="setting-label">Müzik Sesi</label>
+    <label class="setting-label">{$t('sound_volume_label')}</label>
     <div class="volume-control">
       <span class="volume-icon">🔇</span>
       <input 
@@ -82,7 +82,7 @@
 
   <div class="settings-section">
     <!-- svelte-ignore a11y-label-has-associated-control -->
-    <label class="setting-label">Ortam Sesi</label>
+    <label class="setting-label">{$t('sound_environment_label')}</label>
     <div class="track-grid">
       {#each TRACKS as track}
         <button
@@ -98,12 +98,12 @@
 
   <div class="settings-section">
     <!-- svelte-ignore a11y-label-has-associated-control -->
-    <label class="setting-label">🎵 YouTube'dan Müzik</label>
+    <label class="setting-label">{$t('sound_youtube_label')}</label>
     <div class="custom-url-row">
       <input
         class="custom-url-input"
         type="text"
-        placeholder="YouTube linki yapıştır..."
+        placeholder="{$t('sound_youtube_placeholder')}"
         bind:value={customUrl}
         on:keydown={handleCustomKey}
       />
@@ -120,14 +120,14 @@
         class="music-btn"
         class:playing={musicPlaying}
         on:click={toggleMusic}
-        title={musicPlaying ? 'Müziği durdur' : 'Müziği başlat'}
+        title={musicPlaying ? $t('music_off') : $t('music_on')}
       >
         {#if musicPlaying}
           <span class="music-icon">⏸</span>
-          Müziği Durdur
+          {$t('music_off')}
         {:else}
           <span class="music-icon">▶</span>
-          Müziği Başlat
+          {$t('music_on')}
         {/if}
       </button>
     </div>
@@ -135,11 +135,11 @@
 
   <div class="settings-section">
     <!-- svelte-ignore a11y-label-has-associated-control -->
-    <label class="setting-label">🔔 Bildirimler</label>
+    <label class="setting-label">🔔 {$t('notifications_label')}</label>
     {#if !notifSupported}
-      <p class="setting-hint">Tarayıcın bildirimleri desteklemiyor.</p>
+      <p class="setting-hint">{$t('sound_notif_unsupported')}</p>
     {:else if notifPermission === 'denied'}
-      <p class="setting-hint">Bildirimler engellendi. Tarayıcı ayarlarından izin vermen gerekiyor.</p>
+      <p class="setting-hint">{$t('notif_denied')}</p>
     {:else}
       <button
         class="music-btn"
@@ -148,18 +148,18 @@
       >
         {#if notifPermission === 'granted' && $notificationsEnabled}
           <span class="music-icon">🔔</span>
-          Bildirimler Açık
+          {$t('notif_on')}
         {:else}
           <span class="music-icon">🔕</span>
-          Bildirimleri Aç
+          {$t('notif_off')}
         {/if}
       </button>
-      <p class="setting-hint">Sekme arka plandayken timer bittiğinde ve görev tamamlandığında bildirim alırsın.</p>
+      <p class="setting-hint">{$t('sound_notif_hint')}</p>
     {/if}
   </div>
 
   <div class="modal-actions">
-    <button class="btn-accent" on:click={() => show = false}>Kapat</button>
+    <button class="btn-accent" on:click={() => show = false}>{$t('shortcut_close')}</button>
   </div>
 </Modal>
 

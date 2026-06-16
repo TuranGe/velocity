@@ -1,20 +1,20 @@
 /**
  * Velocity Discord Presence Bot
  * ────────────────────────────────────────────────────────────
- * Bu bot, Discord kullanıcılarının aktivitelerini (Spotify, oyun,
- * VS Code vb.) gerçek zamanlı olarak cache'ler ve Velocity
- * backend'inin sorgulayabileceği bir REST API sunar.
+ * This bot caches Discord user activities (Spotify, games,
+ * VS Code, etc.) in real time and exposes a REST API that the
+ * Velocity backend can query for live presence data.
  *
- * KURULUM:
- *   1. Discord Developer Portal'da bir bot oluşturun
- *   2. Bot için şu izinleri verin: GUILD_MEMBERS, GUILD_PRESENCES
- *   3. .env dosyası oluşturun (aşağıdaki örneğe bakın)
+ * SETUP:
+ *   1. Create a bot in the Discord Developer Portal
+ *   2. Grant the following intents: GUILD_MEMBERS, GUILD_PRESENCES
+ *   3. Create a .env file (see example below)
  *   4. npm install && npm start
  *
- * .env örneği:
+ * .env example:
  *   DISCORD_BOT_TOKEN=your_bot_token_here
  *   BOT_API_PORT=4001
- *   BOT_API_SECRET=your_secret_key_here  (Velocity backend ile paylaşın)
+ *   BOT_API_SECRET=your_secret_key_here  (share with the Velocity backend)
  *   GUILD_ID=your_server_id_here
  */
 
@@ -111,7 +111,7 @@ client.once('ready', () => {
       guild.presences.cache.forEach((presence, userId) => {
         presenceCache.set(userId, serializePresence(presence));
       });
-      console.log(`📦  ${presenceCache.size} kullanıcı presence cache'e yüklendi`);
+      console.log(`📦  ${presenceCache.size} user presences loaded into cache`);
     } else {
       console.warn(`⚠️  GUILD_ID (${GUILD_ID}) bulunamadı. Botun sunucuya eklendiğinden emin olun.`);
     }

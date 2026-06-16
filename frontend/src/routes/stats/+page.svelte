@@ -72,9 +72,9 @@
     {#if !$auth.user}
       <div class="auth-wall">
         <div class="auth-wall-icon">🔒</div>
-        <h2 class="auth-wall-title">İstatistikler Gizli</h2>
-        <p class="auth-wall-desc">Focus süreni, tamamlanan oturumlarını ve ilerleme verilerini görmek için giriş yapman gerekiyor.</p>
-        <a href="/profile" class="auth-wall-btn font-mono">Giriş Yap →</a>
+        <h2 class="auth-wall-title">{$t('stats_locked')}</h2>
+        <p class="auth-wall-desc">{$t('stats_locked_desc')}</p>
+        <a href="/profile" class="auth-wall-btn font-mono">{$t('stats_sign_in')}</a>
       </div>
     {:else}
 

@@ -178,7 +178,7 @@
       </div>
 
       <!-- Footer -->
-      <div class="rc-footer">velocity-timer.app</div>
+      <div class="rc-footer">velocity.app</div>
     </div>
   </div>
 </div>

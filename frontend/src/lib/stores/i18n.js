@@ -3,26 +3,68 @@ import { browser } from '$app/environment';
 
 const translations = {
   en: {
+    switch_to_light_mode: 'Switch to light mode',
+    switch_to_dark_mode: 'Switch to dark mode',
+    // Time units
     minute: 'm',
     hour: 'h',
     day: 'd',
     week: 'w',
+
     // Navbar
     timer: 'Timer',
     stats: 'Stats',
+    teams: 'Teams',
+    leaderboard: 'Leaderboard',
+    profile: 'Profile',
+    sign_in: 'Sign In',
+    sign_out: 'Sign Out',
     music_on: 'Ambient music on',
     music_off: 'Stop music',
     lang_toggle: 'EN',
+    logged_out: 'Logged out',
+
+    // Auth modal
+    auth_sign_in: 'Sign In',
+    auth_register: 'Register',
+    auth_username: 'Username',
+    auth_email: 'Email',
+    auth_password: 'Password',
+    auth_confirm_password: 'Confirm password',
+    auth_all_fields: 'All fields required',
+    auth_passwords_match: 'Passwords do not match',
+    auth_email_password: 'Email and password required',
+    auth_create_account: 'Create Account',
+    auth_or_continue: 'or continue with',
+    auth_discord_not_configured: 'Discord OAuth not configured',
+    auth_welcome: 'Welcome',
+    auth_welcome_back: 'Welcome back',
+    auth_discord_no_code: 'No authorization code received',
+    auth_discord_error_message: 'Discord authentication failed',
+    auth_discord_error_title: 'Authentication Error',
+    auth_discord_return_home: 'Return to Home',
 
     // Timer
     focus: 'Focus',
     short_break: 'Short Break',
     long_break: 'Long Break',
+    custom: 'Custom',
     start: 'Start',
     pause: 'Pause',
     reset: 'Reset',
     session: 'Session',
     sessions_done: 'sessions done',
+    minutes_placeholder: 'Minutes',
+    timer_mode_running_hint: "Stop the timer before switching modes",
+    timer_shortcut_hint: 'Shortcut',
+    timer_status_running: 'Timer is running. Stop or reset before changing modes.',
+    timer_minutes_focused: 'Minutes focused',
+    timer_all_shortcuts: 'all shortcuts',
+    timer_see_shortcuts: 'View all shortcuts',
+    timer_notif_prompt: '🔔 Want notifications when the timer finishes?',
+    timer_notif_enable: 'Enable',
+    timer_notif_disable: 'Disable',
+    timer_long_break_suggestion: '🎉 4 focus sessions complete! Time for a long break.',
 
     // Tasks
     tasks: 'Tasks',
@@ -36,6 +78,10 @@ const translations = {
     done_label: 'done',
     remaining_label: 'left',
     completed: 'Completed',
+    working_on_this: 'Working on this',
+    remove_selection: 'Remove selection',
+    select_task: 'Select task',
+    timer_locked: 'Timer is running. Stop or reset before changing modes.',
 
     // Hero
     hero_badge: 'v1.0 — FOCUS SYSTEM',
@@ -55,10 +101,17 @@ const translations = {
     feat_theme_title: 'Adaptive Theme',
     feat_theme_desc: 'Dark and light modes that adapt to your environment and preference.',
 
-    // Community
+    // Community / Home page
     community: 'COMMUNITY',
     leaderboard_title: 'Global Leaderboard',
     leaderboard_sub: "This week's most focused developers",
+    top_teams: 'Top Teams',
+    see_all: 'See all →',
+    members_count: 'members',
+    sessions_count: 'sessions',
+    joined_label: 'Joined',
+    join_label: 'Join',
+    no_data_yet: 'No data yet',
     period_week: 'This Week',
     period_month: 'This Month',
     period_all: 'All Time',
@@ -71,6 +124,7 @@ const translations = {
     join_leaderboard: '+ Join',
     teams_label: 'TEAMS',
     total_sessions: 'sessions',
+    sign_in_first: 'Sign in first to join a team',
 
     // Categories
     teams_all: 'All',
@@ -81,6 +135,7 @@ const translations = {
     teams_gaming: 'Gaming',
     teams_social: 'Social',
 
+    // Teams page
     join_team: '+ Join Team',
     leave_team: 'Leave',
     create_team: 'Create Your Own',
@@ -95,12 +150,25 @@ const translations = {
     cancel: 'Cancel',
     members_label: 'members',
     your_teams: 'Your Teams',
+    manage_team_btn: 'Manage',
+    kick_member: 'Kick',
+    promote_mod: '→ Mod',
+    demote_member: '→ Member',
+    transfer_leadership_back: 'Back',
+    transfer_leadership_select: 'Select the new team leader:',
+    invite_code_copy_label: 'Invite Code',
+    creating_label: 'Creating…',
+    joining_label: 'Joining…',
+    team_name_preview: 'Team Name',
+    login_to_see_teams: 'to create or join teams',
+    failed_load_teams: 'Failed to load teams',
+    transfer_before_leaving: 'Transfer leadership before leaving',
 
     // Auth
     username_placeholder: 'Pick a username...',
     save: 'Save',
 
-    // Stats
+    // Stats page
     your_velocity: 'YOUR VELOCITY',
     focus_stats: 'Focus Statistics',
     all_time_data: 'All-time productivity data',
@@ -111,6 +179,9 @@ const translations = {
     session_breakdown: 'Session Breakdown',
     tasks_completed_stat: 'Tasks Completed',
     back_to_timer: '← Back to Timer',
+    stats_locked: 'Stats Locked',
+    stats_locked_desc: 'Sign in to see your focus time, completed sessions, and progress data.',
+    stats_sign_in: 'Sign In →',
 
     // Leaderboard & Teams
     find_your_crew: 'Find your crew',
@@ -125,11 +196,11 @@ const translations = {
     team_deleted: 'Team deleted',
     invite_code_copied: 'Invite code copied',
     could_not_copy: 'Could not copy to clipboard',
-    confirm_leave_title: 'Çıkmak istediğinize emin misiniz?',
-    confirm_leave_msg: 'You\'re the only member of',
+    confirm_leave_title: 'Are you sure you want to leave?',
+    confirm_leave_msg: "You're the only member of",
     will_delete_team: 'Leaving will permanently delete the team.',
     leave_delete_team: 'Leave & Delete Team',
-    confirm_delete_title: 'Takımı silmek istediğinize emin misiniz?',
+    confirm_delete_title: 'Are you sure you want to delete this team?',
     confirm_delete_msg: 'This is permanent and will remove all team tasks.',
     delete_team: 'Delete Team',
     removed_member: 'removed from team',
@@ -137,6 +208,9 @@ const translations = {
     transfer_leadership_done: 'Leadership transferred',
     transfer_leadership_btn: 'Transfer Leadership',
     manage_team: 'Manage',
+    leaderboard_join_cta: 'Join the leaderboard —',
+    leaderboard_join_link: 'log in',
+    leaderboard_join_suffix: 'and start focusing!',
 
     // Footer
     footer_built: 'Built with SvelteKit & GSAP',
@@ -178,7 +252,8 @@ const translations = {
     profile_discord_unavailable: 'Discord activity unavailable. Make sure you have joined the server with the bot.',
     profile_listening: 'LISTENING TO SPOTIFY',
     profile_playing: 'PLAYING',
-    profile_login_required: 'You must be logged in',
+    profile_user_not_found: 'User not found.',
+    profile_load_error: 'Could not load profile.',
     profile_avatar_modal_label: 'PHOTO',
     profile_avatar_modal_title: 'Update your profile photo',
     profile_photo_too_large: 'Photo too large (max 5MB)',
@@ -189,6 +264,7 @@ const translations = {
     profile_close: 'Close',
     profile_streak: 'streak',
     profile_share: 'Share',
+    profile_chart_tooltip_sessions: 'sessions',
 
     // Weekly Summary
     weekly_summary_label: 'WEEKLY RECAP',
@@ -202,6 +278,40 @@ const translations = {
     weekly_summary_streak: 'day streak',
     weekly_summary_best_day: 'Best day:',
     weekly_goal: 'Weekly Goal',
+
+    // Task panel
+    task_login_required: 'Sign in to add tasks',
+    task_gate_text: 'Sign in to add tasks',
+    task_gate_link: 'Sign in →',
+    task_tracking_active: 'tasks in progress',
+    task_selected_hint: 'tasks selected — start the timer!',
+    task_select_hint: 'Select a task, then start the timer',
+    delete_task: 'Delete task',
+
+    // Sound settings
+    sound_notif_hint: 'Get notified when the timer finishes or a task completes, even when the tab is in the background.',
+    sound_notif_unsupported: 'Your browser does not support notifications.',
+    sound_settings_title: '🔊 Sound Settings',
+    sound_volume_label: 'Music Volume',
+    sound_environment_label: 'Environment Sound',
+    sound_youtube_label: '🎵 Music from YouTube',
+    sound_youtube_placeholder: 'Paste YouTube link...',
+    notifications_label: 'Notifications',
+    notif_denied: 'Notification permission denied. Please enable it in your browser settings.',
+    notif_on: 'Notifications On',
+    notif_off: 'Notifications Off',
+
+    // Shortcuts overlay
+    shortcut_title: 'Keyboard Shortcuts',
+    shortcut_group_timer: 'Timer',
+    shortcut_group_modes: 'Switch Mode',
+    shortcut_group_general: 'General',
+    shortcut_start_pause: 'Start / Pause',
+    shortcut_reset: 'Reset',
+    shortcut_toggle_help: 'Show / hide this guide',
+    shortcut_close: 'Close',
+    shortcut_reopen_hint: 'Press',
+    shortcut_modes: 'Modes',
 
     // Recap / Share Card
     recap_card_title: '📊 Stats Card',
@@ -217,26 +327,71 @@ const translations = {
     recap_downloaded: 'Card downloaded! 🎉',
     recap_download_failed: "Couldn't create the card, try again",
   },
+
   tr: {
+    switch_to_light_mode: 'Aydınlık moda geç',
+    switch_to_dark_mode: 'Karanlık moda geç',
+    // Zaman birimleri
     minute: 'dk',
     hour: 's',
     day: 'g',
     week: 'h',
+
+    // Navbar
     timer: 'Zamanlayıcı',
     stats: 'İstatistik',
+    teams: 'Ekipler',
+    leaderboard: 'Sıralama',
+    profile: 'Profil',
+    sign_in: 'Giriş Yap',
+    sign_out: 'Çıkış Yap',
     music_on: 'Müzik aç',
     music_off: 'Müziği kapat',
     lang_toggle: 'TR',
+    logged_out: 'Çıkış yapıldı',
 
+    // Giriş/Kayıt modalı
+    auth_sign_in: 'Giriş Yap',
+    auth_register: 'Kayıt Ol',
+    auth_username: 'Kullanıcı adı',
+    auth_email: 'E-posta',
+    auth_password: 'Şifre',
+    auth_confirm_password: 'Şifreyi onayla',
+    auth_all_fields: 'Tüm alanlar zorunlu',
+    auth_passwords_match: 'Şifreler eşleşmiyor',
+    auth_email_password: 'E-posta ve şifre gerekli',
+    auth_create_account: 'Hesap Oluştur',
+    auth_or_continue: 'veya devam et',
+    auth_discord_not_configured: 'Discord OAuth yapılandırılmamış',
+    auth_welcome: 'Hoş geldin',
+    auth_welcome_back: 'Tekrar hoş geldin',
+    auth_discord_no_code: 'Yetkilendirme kodu alınamadı',
+    auth_discord_error_message: 'Discord ile kimlik doğrulama başarısız',
+    auth_discord_error_title: 'Kimlik Doğrulama Hatası',
+    auth_discord_return_home: 'Ana Sayfaya Dön',
+
+    // Zamanlayıcı
     focus: 'Odak',
     short_break: 'Kısa Mola',
     long_break: 'Uzun Mola',
+    custom: 'Özel',
     start: 'Başlat',
     pause: 'Duraklat',
     reset: 'Sıfırla',
     session: 'Seans',
     sessions_done: 'seans tamamlandı',
+    minutes_placeholder: 'Dakika',
+    timer_mode_running_hint: 'Mod değiştirmek için önce zamanlayıcıyı durdur',
+    timer_shortcut_hint: 'Kısayol',
+    timer_status_running: 'Zamanlayıcı çalışıyor. Mod değiştirmek için önce durdur veya sıfırla.',
+    timer_minutes_focused: 'Odak dakikası',
+    timer_all_shortcuts: 'tüm kısayollar',
+    timer_see_shortcuts: 'Tüm kısayolları gör',
+    timer_notif_prompt: '🔔 Sekme arka plandayken bildirim almak ister misin?',
+    timer_notif_enable: 'Aç',
+    timer_long_break_suggestion: '🎉 4 odak seansı tamamlandı! Uzun mola zamanı.',
 
+    // Görevler
     tasks: 'Görevler',
     task_placeholder: 'Ne üzerinde çalışıyorsun?',
     session_label: 'Pomodoro',
@@ -248,12 +403,18 @@ const translations = {
     done_label: 'tamamlandı',
     remaining_label: 'kaldı',
     completed: 'Tamamlandı',
+    working_on_this: 'Bunu yapıyorum',
+    remove_selection: 'Seçimi kaldır',
+    select_task: 'Üzerinde çalışmak için seç',
+    timer_locked: 'Timer çalışırken değiştiremezsin',
 
+    // Ana sayfa - Hero
     hero_badge: 'v1.0 — ODAK SİSTEMİ',
     hero_title_1: 'Daha hızlı üret.',
     hero_title_2: 'Akışta kal.',
     hero_tagline: 'Geliştiriciler için sade bir odak zamanlayıcısı.',
 
+    // Özellikler
     why_velocity: 'NEDEN VELOCITY',
     engineered: 'Derin çalışma için tasarlandı',
     feat_focus_title: 'Derin Odak',
@@ -265,9 +426,17 @@ const translations = {
     feat_theme_title: 'Uyarlanabilir Tema',
     feat_theme_desc: 'Ortamına ve tercihine göre karanlık ve aydınlık mod.',
 
+    // Topluluk / Ana sayfa
     community: 'TOPLULUK',
     leaderboard_title: 'Global Sıralama',
     leaderboard_sub: 'Bu haftanın en çok odaklanan geliştiricileri',
+    top_teams: 'En İyi Ekipler',
+    see_all: 'Tümünü gör →',
+    members_count: 'üye',
+    sessions_count: 'seans',
+    joined_label: 'Katıldın',
+    join_label: 'Katıl',
+    no_data_yet: 'Henüz veri yok',
     period_week: 'Bu Hafta',
     period_month: 'Bu Ay',
     period_all: 'Tüm Zamanlar',
@@ -280,8 +449,9 @@ const translations = {
     join_leaderboard: '+ Katıl',
     teams_label: 'EKİPLER',
     total_sessions: 'seans',
+    sign_in_first: 'Ekibe katılmak için önce giriş yap',
 
-    // Categories
+    // Kategoriler
     teams_all: 'Tümü',
     teams_general: 'Genel',
     teams_productivity: 'Verimlilik',
@@ -290,6 +460,7 @@ const translations = {
     teams_gaming: 'Oyun',
     teams_social: 'Sosyal',
 
+    // Ekipler sayfası
     join_team: '+ Ekibe Katıl',
     leave_team: 'Ayrıl',
     create_team: 'Kendi Ekibini Kur',
@@ -304,10 +475,25 @@ const translations = {
     cancel: 'İptal',
     members_label: 'üye',
     your_teams: 'Ekiplerim',
+    manage_team_btn: 'Yönet',
+    kick_member: 'Çıkar',
+    promote_mod: '→ Mod',
+    demote_member: '→ Üye',
+    transfer_leadership_back: 'Geri',
+    transfer_leadership_select: 'Yeni takım liderini seç:',
+    invite_code_copy_label: 'Davet Kodu',
+    creating_label: 'Oluşturuluyor…',
+    joining_label: 'Katılıyor…',
+    team_name_preview: 'Ekip Adı',
+    login_to_see_teams: 'ekip oluşturmak veya katılmak için',
+    failed_load_teams: 'Ekipler yüklenemedi',
+    transfer_before_leaving: 'Ayrılmadan önce liderliği devret',
 
+    // Giriş
     username_placeholder: 'Kullanıcı adı seç...',
     save: 'Kaydet',
 
+    // İstatistik sayfası
     your_velocity: 'HIZIN',
     focus_stats: 'Odak İstatistikleri',
     all_time_data: 'Tüm zamanlar verileri',
@@ -318,8 +504,11 @@ const translations = {
     session_breakdown: 'Seans Dağılımı',
     tasks_completed_stat: 'Tamamlanan Görev',
     back_to_timer: '← Zamanlayıcıya Dön',
+    stats_locked: 'İstatistikler Kilitli',
+    stats_locked_desc: 'Odak süreni, tamamlanan seanslarını ve ilerleme verilerini görmek için giriş yapman gerekiyor.',
+    stats_sign_in: 'Giriş Yap →',
 
-    // Leaderboard & Teams
+    // Liderlik tablosu & Ekipler
     find_your_crew: 'Ekibini bul',
     search_teams_placeholder: 'Ekipleri ara...',
     search_users_placeholder: 'Kullanıcı ara...',
@@ -337,18 +526,22 @@ const translations = {
     will_delete_team: 'ekibin tek üyesisin. Çıkmak ekibi kalıcı olarak silecek.',
     leave_delete_team: 'Ayrıl & Ekibi Sil',
     confirm_delete_title: 'Ekibi silmek istediğinize emin misiniz?',
-    confirm_delete_msg: 'Bu permanent ve tüm ekip görevleri silinecek.',
+    confirm_delete_msg: 'Bu işlem geri alınamaz ve tüm ekip görevleri silinecek.',
     delete_team: 'Ekibi Sil',
     removed_member: 'ekipten çıkarıldı',
     now_role: 'artık',
     transfer_leadership_done: 'Liderlik aktarıldı',
     transfer_leadership_btn: 'Liderliği Aktar',
     manage_team: 'Yönet',
+    leaderboard_join_cta: 'Sıralamaya katıl —',
+    leaderboard_join_link: 'giriş yap',
+    leaderboard_join_suffix: 've odaklanmaya başla!',
 
+    // Alt bilgi
     footer_built: 'SvelteKit & GSAP ile yapıldı',
     footer_sessions: 'Bugünkü seanslar:',
 
-    // Profile
+    // Profil
     profile_label: 'PROFİL',
     profile_no_bio: 'Henüz bio eklenmemiş.',
     profile_bio_placeholder: 'Kendin hakkında kısa bir not bırak...',
@@ -384,7 +577,8 @@ const translations = {
     profile_discord_unavailable: 'Discord aktivitesi şu an görüntülenemiyor. Botun bulunduğu sunucuya üye olduğunuzdan emin olun.',
     profile_listening: 'SPOTİFY DİNLENİYOR',
     profile_playing: 'OYNANMIYOR',
-    profile_login_required: 'Giriş yapmanız gerekiyor',
+    profile_user_not_found: 'Kullanıcı bulunamadı.',
+    profile_load_error: 'Profil yüklenemedi.',
     profile_avatar_modal_label: 'FOTOĞRAF',
     profile_avatar_modal_title: 'Profil fotoğrafını güncelle',
     profile_photo_too_large: 'Fotoğraf çok büyük (max 5MB)',
@@ -395,8 +589,9 @@ const translations = {
     profile_close: 'Kapat',
     profile_streak: 'üst üste',
     profile_share: 'Paylaş',
+    profile_chart_tooltip_sessions: 'seans',
 
-    // Weekly Summary
+    // Haftalık Özet
     weekly_summary_label: 'HAFTALIK ÖZET',
     weekly_summary_title: 'Haftan özetlendi',
     weekly_summary_sub: 'Son 7 günde neler yaptığına göz at. İyi hafta sonları!',
@@ -409,7 +604,41 @@ const translations = {
     weekly_summary_best_day: 'En iyi gün:',
     weekly_goal: 'Haftalık Hedef',
 
-    // Recap / Share Card
+    // Görev paneli
+    task_login_required: 'Görev eklemek için giriş yapman gerekiyor',
+    task_gate_text: 'Görev eklemek için',
+    task_gate_link: 'giriş yap →',
+    task_tracking_active: 'görev izleniyor',
+    task_selected_hint: 'görev seçili — timer\'ı başlat!',
+    task_select_hint: 'Yapmak istediğin görevi seç, sonra timer\'ı başlat',
+    delete_task: 'Görevi Sil',
+
+    // Ses ayarları
+    sound_notif_hint: 'Sekme arka plandayken timer bittiğinde ve görev tamamlandığında bildirim alırsın.',
+    sound_notif_unsupported: 'Tarayıcın bildirimleri desteklemiyor.',
+    sound_settings_title: '🔊 Ses Ayarları',
+    sound_volume_label: 'Müzik Sesi',
+    sound_environment_label: 'Ortam Sesi',
+    sound_youtube_label: '🎵 YouTube\'dan Müzik',
+    sound_youtube_placeholder: 'YouTube linki yapıştır...',
+    notifications_label: 'Bildirimler',
+    notif_denied: 'Bildirim izni reddedildi. Tarayıcı ayarlarından izin verin.',
+    notif_on: 'Bildirimler Açık',
+    notif_off: 'Bildirimler Kapalı',
+
+    // Kısayol rehberi
+    shortcut_title: 'Klavye Kısayolları',
+    shortcut_group_timer: 'Zamanlayıcı',
+    shortcut_group_modes: 'Mod Değiştir',
+    shortcut_group_general: 'Genel',
+    shortcut_start_pause: 'Başlat / Duraklat',
+    shortcut_reset: 'Sıfırla',
+    shortcut_toggle_help: 'Bu rehberi göster / gizle',
+    shortcut_close: 'Kapat',
+    shortcut_reopen_hint: 'Tekrar açmak için',
+    shortcut_modes: 'Modlar',
+
+    // Özet / Paylaşım Kartı
     recap_card_title: '📊 İstatistik Kartı',
     recap_tagline: 'HAFTALIK ÖZET',
     recap_hours_focus: 'ODAK SÜRESİ',
@@ -428,6 +657,8 @@ const translations = {
 const stored = (browser && localStorage.getItem('velocity-lang')) || 'en';
 export const lang = writable(stored);
 
+// Derived store: returns a lookup function for the current language.
+// Falls back to English if a key is missing in the active language.
 export const t = derived(lang, $lang => {
   const dict = translations[$lang] || translations.en;
   return (key) => dict[key] ?? translations.en[key] ?? key;

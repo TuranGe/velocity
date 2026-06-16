@@ -1,9 +1,12 @@
 <script>
   import { fade, scale } from 'svelte/transition';
   import { browser } from '$app/environment';
+  import { t } from '$lib/stores/i18n';
 
   export let show = false;
 
+  // Attach the node directly to <body> so the overlay renders above everything,
+  // regardless of which stacking context the parent component sits in.
   function portal(node) {
     if (!browser) return {};
     document.body.appendChild(node);
@@ -12,28 +15,29 @@
     };
   }
 
-  const SHORTCUT_GROUPS = [
+  // Shortcut groups are derived reactively so they re-render on language change.
+  $: SHORTCUT_GROUPS = [
     {
-      title: 'Timer',
+      title: $t('shortcut_group_timer'),
       items: [
-        { keys: ['Space'], desc: 'Başlat / Duraklat' },
-        { keys: ['R'], desc: 'Sıfırla' },
+        { keys: ['Space'], desc: $t('shortcut_start_pause') },
+        { keys: ['R'],     desc: $t('shortcut_reset') },
       ],
     },
     {
-      title: 'Mod Değiştir',
+      title: $t('shortcut_group_modes'),
       items: [
-        { keys: ['F'], desc: 'Focus' },
-        { keys: ['S'], desc: 'Kısa mola' },
-        { keys: ['L'], desc: 'Uzun mola' },
-        { keys: ['C'], desc: 'Özel süre' },
+        { keys: ['F'], desc: $t('focus') },
+        { keys: ['S'], desc: $t('short_break') },
+        { keys: ['L'], desc: $t('long_break') },
+        { keys: ['C'], desc: $t('custom') },
       ],
     },
     {
-      title: 'Genel',
+      title: $t('shortcut_group_general'),
       items: [
-        { keys: ['?'], desc: 'Bu rehberi göster/gizle' },
-        { keys: ['Esc'], desc: 'Kapat' },
+        { keys: ['?'],   desc: $t('shortcut_toggle_help') },
+        { keys: ['Esc'], desc: $t('shortcut_close') },
       ],
     },
   ];
@@ -50,11 +54,13 @@
 <svelte:window on:keydown={handleKeydown} />
 
 {#if show}
+  <!-- svelte-ignore a11y-click-events-have-key-events -->
+  <!-- svelte-ignore a11y-no-static-element-interactions -->
   <div use:portal class="shortcuts-backdrop" on:click={handleBackdropClick} transition:fade={{ duration: 150 }}>
     <div class="shortcuts-modal" transition:scale={{ duration: 200, start: 0.95, opacity: 0 }}>
       <div class="shortcuts-header">
-        <h2>⌨️ Klavye Kısayolları</h2>
-        <button class="shortcuts-close" on:click={() => show = false} aria-label="Kapat">✕</button>
+        <h2>⌨️ {$t('shortcut_title')}</h2>
+        <button class="shortcuts-close" on:click={() => show = false} aria-label={$t('shortcut_close')}>✕</button>
       </div>
 
       <div class="shortcuts-body">
@@ -77,7 +83,7 @@
       </div>
 
       <p class="shortcuts-footer">
-        Bu rehberi tekrar açmak için <kbd>?</kbd> tuşuna basabilirsin
+        {$t('shortcut_reopen_hint')} <kbd>?</kbd>
       </p>
     </div>
   </div>

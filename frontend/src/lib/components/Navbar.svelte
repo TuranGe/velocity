@@ -28,10 +28,10 @@
 
   $: user = $auth.user;
   $: links = [
-    { href: '/',            label: $t('timer')   },
-    { href: '/teams',       label: 'Teams'       },
-    { href: '/leaderboard', label: 'Leaderboard' },
-    { href: '/stats',       label: $t('stats')   },
+    { href: '/',            label: $t('timer')       },
+    { href: '/teams',       label: $t('teams')       },
+    { href: '/leaderboard', label: $t('leaderboard') },
+    { href: '/stats',       label: $t('stats')       },
   ];
 
   onMount(async () => {
@@ -76,7 +76,7 @@
   function handleLogout() {
     auth.logout();
     showProfile = false;
-    toast.info('Logged out');
+    toast.info($t('logged_out'));
   }
 </script>
 
@@ -146,15 +146,15 @@
         </button>
         {#if showProfile}
           <div class="dropdown" transition:fly={{ y: -8, duration: 150 }}>
-            <a href="/stats" class="dropdown-item" on:click={() => showProfile = false}>📊 Stats</a>
-            <a href="/profile" class="dropdown-item" on:click={() => showProfile = false}>👤 Profil</a>
+            <a href="/stats" class="dropdown-item" on:click={() => showProfile = false}>📊 {$t('stats')}</a>
+            <a href="/profile" class="dropdown-item" on:click={() => showProfile = false}>👤 {$t('profile')}</a>
             <div class="dropdown-divider"></div>
-            <button class="dropdown-item danger" on:click={handleLogout}>Sign Out</button>
+            <button class="dropdown-item danger" on:click={handleLogout}>{$t('sign_out')}</button>
           </div>
         {/if}
       </div>
     {:else}
-      <button class="auth-btn font-mono" on:click={() => openAuth('login')}>Sign In</button>
+      <button class="auth-btn font-mono" on:click={() => openAuth('login')}>{$t('sign_in')}</button>
     {/if}
   </div>
 </nav>

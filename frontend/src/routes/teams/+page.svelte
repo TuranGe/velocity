@@ -51,7 +51,7 @@
     try {
       const data = await fetchTeams();
       teams = data.teams;
-    } catch(e) { toast.error('Failed to load teams'); }
+    } catch(e) { toast.error($t('failed_load_teams')); }
     finally { loading = false; }
   }
 
@@ -92,7 +92,7 @@
       const others = team.members?.filter(m => m.id !== user.id);
       if (others?.length > 0) {
         showManage = team; showTransfer = true;
-        toast.warn('Transfer leadership before leaving');
+        toast.warn($t('transfer_before_leaving'));
         return;
       }
       // Last member — show confirmation modal
@@ -183,7 +183,7 @@
         <button class="btn-outline" on:click={() => showJoin = true}>{$t('join_with_code')}</button>
         <button class="btn-accent" on:click={() => showCreate = true}>+ {$t('create_team_btn')}</button>
       {:else}
-        <p class="login-hint"><a href="/">Log in</a> to create or join teams</p>
+        <p class="login-hint"><a href="/">{$t('sign_in')}</a> {$t('login_to_see_teams')}</p>
       {/if}
     </div>
   </div>
@@ -245,36 +245,32 @@
             {#if (team.members?.length || 0) > 5}
               <span class="tc-more font-mono">+{team.members.length - 5}</span>
             {/if}
-            <span class="tc-count font-mono">{team.member_count} members</span>
+            <span class="tc-count font-mono">{team.member_count} {$t('members_count')}</span>
           </div>
 
           <!-- Stats -->
           <div class="tc-stats">
             <span class="tc-stat">
               <span class="tc-stat-val font-mono">{team.members?.reduce((s,m)=>s+m.sessions,0)||0}</span>
-              <span class="tc-stat-label">sessions</span>
+              <span class="tc-stat-label">{$t('sessions_count')}</span>
             </span>
           </div>
 
           <!-- Actions -->
           <div class="tc-actions">
             <div class="tc-code-section">
-              {#if isMember(team)}
-                <button class="btn-sm btn-copy" on:click={() => copyCode(team.invite_code)} title="Copy invite code">
-                  🔗 {team.invite_code}
-                </button>
-              {:else}
-                <span class="tc-code-display font-mono">{team.invite_code}</span>
-              {/if}
+              <button class="btn-sm btn-copy" on:click={() => copyCode(team.invite_code)} title="Copy invite code">
+                🔗 {team.invite_code}
+              </button>
             </div>
             <div class="tc-button-section">
               {#if isMember(team)}
                 {#if myRole(team) === 'leader' || myRole(team) === 'moderator'}
-                  <button class="btn-sm" on:click={() => { showManage = team; showTransfer = false; }}>Manage</button>
+                  <button class="btn-sm" on:click={() => { showManage = team; showTransfer = false; }}>{$t('manage_team_btn')}</button>
                 {/if}
-                <button class="btn-sm btn-danger" on:click={() => handleLeave(team)}>Leave</button>
+                <button class="btn-sm btn-danger" on:click={() => handleLeave(team)}>{$t('leave_team')}</button>
               {:else if user}
-                <button class="btn-sm btn-primary" on:click={() => { joinCode = team.invite_code; handleJoin(); }}>JOIN</button>
+                <button class="btn-sm btn-primary" on:click={() => { joinCode = team.invite_code; handleJoin(); }}>{$t('join_label')}</button>
               {/if}
             </div>
           </div>
@@ -316,14 +312,14 @@
 
   <div class="preview-bar" style="background:{newColor}20; border-color:{newColor}">
     <span class="preview-dot" style="background:{newColor}"></span>
-    <span>{newName || 'Team Name'}</span>
+    <span>{newName || $t('team_name_preview')}</span>
     <span class="font-mono" style="font-size:0.65rem;color:{newColor}">{newCategory}</span>
   </div>
 
   <div class="modal-actions">
     <button class="btn-outline" on:click={() => showCreate = false}>{$t('cancel')}</button>
     <button class="btn-accent" on:click={handleCreate} disabled={creating || !newName.trim()}>
-      {creating ? 'Creating…' : $t('create_team_btn')}
+      {creating ? $t('creating_label') : $t('create_team_btn')}
     </button>
   </div>
 </Modal>
@@ -338,7 +334,7 @@
   <div class="modal-actions">
     <button class="btn-outline" on:click={() => showJoin = false}>{$t('cancel')}</button>
     <button class="btn-accent" on:click={handleJoin} disabled={joining || !joinCode.trim()}>
-      {joining ? 'Joining…' : $t('join_with_code')}
+      {joining ? $t('joining_label') : $t('join_with_code')}
     </button>
   </div>
 </Modal>
@@ -355,7 +351,7 @@
 
     {#if showTransfer}
       <div class="transfer-section">
-        <p class="transfer-hint">Select the new team leader:</p>
+        <p class="transfer-hint">{$t('transfer_leadership_select')}</p>
         <div class="member-list">
           {#each (showManage.members||[]).filter(m=>m.id!==user.id) as m}
             <button
@@ -371,8 +367,8 @@
           {/each}
         </div>
         <div class="modal-actions">
-          <button class="btn-outline" on:click={() => showTransfer = false}>Back</button>
-          <button class="btn-accent" disabled={!transferTo} on:click={() => handleTransfer(showManage)}>Transfer Leadership</button>
+          <button class="btn-outline" on:click={() => showTransfer = false}>{$t('transfer_leadership_back')}</button>
+          <button class="btn-accent" disabled={!transferTo} on:click={() => handleTransfer(showManage)}>{$t('transfer_leadership_btn')}</button>
         </div>
       </div>
     {:else}
@@ -386,21 +382,21 @@
             {#if m.id !== user?.id && myRole(showManage) === 'leader'}
               <div class="m-actions">
                 {#if m.role === 'member'}
-                  <button class="btn-xs" on:click={() => handleRoleChange(showManage,m,'moderator')}>→ Mod</button>
+                  <button class="btn-xs" on:click={() => handleRoleChange(showManage,m,'moderator')}>{$t('promote_mod')}</button>
                 {:else if m.role === 'moderator'}
-                  <button class="btn-xs" on:click={() => handleRoleChange(showManage,m,'member')}>→ Member</button>
+                  <button class="btn-xs" on:click={() => handleRoleChange(showManage,m,'member')}>{$t('demote_member')}</button>
                 {/if}
-                <button class="btn-xs btn-danger" on:click={() => handleKick(showManage,m)}>Kick</button>
+                <button class="btn-xs btn-danger" on:click={() => handleKick(showManage,m)}>{$t('kick_member')}</button>
               </div>
             {:else if m.id !== user?.id && myRole(showManage) === 'moderator' && m.role === 'member'}
-              <button class="btn-xs btn-danger" on:click={() => handleKick(showManage,m)}>Kick</button>
+              <button class="btn-xs btn-danger" on:click={() => handleKick(showManage,m)}>{$t('kick_member')}</button>
             {/if}
           </div>
         {/each}
       </div>
 
       <div class="manage-info">
-        <span class="font-mono" style="font-size:0.65rem;color:var(--text-tertiary)">Invite Code</span>
+        <span class="font-mono" style="font-size:0.65rem;color:var(--text-tertiary)">{$t('invite_code_copy_label')}</span>
         <button class="invite-code-btn font-mono" on:click={() => copyCode(showManage.invite_code)}>
           {showManage.invite_code} 📋
         </button>
@@ -408,8 +404,8 @@
 
       {#if myRole(showManage) === 'leader'}
         <div class="danger-zone">
-          <button class="btn-outline" on:click={() => showTransfer = true}>Transfer Leadership</button>
-          <button class="btn-danger-full" on:click={() => handleDelete(showManage)}>Delete Team</button>
+          <button class="btn-outline" on:click={() => showTransfer = true}>{$t('transfer_leadership_btn')}</button>
+          <button class="btn-danger-full" on:click={() => handleDelete(showManage)}>{$t('delete_team')}</button>
         </div>
       {/if}
     {/if}
@@ -419,13 +415,13 @@
 <!-- Leave Confirmation Modal -->
 <Modal show={!!leaveConfirmTeam} on:close={() => leaveConfirmTeam = null}>
   <div class="confirm-modal">
-    <h3 class="modal-title font-mono">Çıkmak istediğinize emin misiniz?</h3>
+    <h3 class="modal-title font-mono">{$t('confirm_leave_title')}</h3>
     <p class="confirm-message">
-      You're the only member of <strong>{leaveConfirmTeam?.name}</strong>. Leaving will permanently delete the team.
+      {$t('confirm_leave_msg')} <strong>{leaveConfirmTeam?.name}</strong>. {$t('will_delete_team')}
     </p>
     <div class="modal-actions">
-      <button class="btn-outline" on:click={() => leaveConfirmTeam = null}>Cancel</button>
-      <button class="btn-danger-full" on:click={confirmLeave}>Leave & Delete Team</button>
+      <button class="btn-outline" on:click={() => leaveConfirmTeam = null}>{$t('cancel')}</button>
+      <button class="btn-danger-full" on:click={confirmLeave}>{$t('leave_delete_team')}</button>
     </div>
   </div>
 </Modal>
@@ -433,13 +429,13 @@
 <!-- Delete Confirmation Modal -->
 <Modal show={!!deleteConfirmTeam} on:close={() => deleteConfirmTeam = null}>
   <div class="confirm-modal">
-    <h3 class="modal-title font-mono">Takımı silmek istediğinize emin misiniz?</h3>
+    <h3 class="modal-title font-mono">{$t('confirm_delete_title')}</h3>
     <p class="confirm-message">
-      Delete <strong>{deleteConfirmTeam?.name}</strong>? This is permanent and will remove all team tasks.
+      {$t('confirm_delete_msg')} <strong>{deleteConfirmTeam?.name}</strong>.
     </p>
     <div class="modal-actions">
-      <button class="btn-outline" on:click={() => deleteConfirmTeam = null}>Cancel</button>
-      <button class="btn-danger-full" on:click={confirmDelete}>Delete Team</button>
+      <button class="btn-outline" on:click={() => deleteConfirmTeam = null}>{$t('cancel')}</button>
+      <button class="btn-danger-full" on:click={confirmDelete}>{$t('delete_team')}</button>
     </div>
   </div>
 </Modal>

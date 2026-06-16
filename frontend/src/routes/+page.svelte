@@ -114,12 +114,12 @@
 
   async function quickJoin(team) {
     if (!user) {
-      toast.warn("Sign in first to join a team");
+      toast.warn($t('sign_in_first'));
       return;
     }
     try {
       await joinTeamByCode(team.invite_code);
-      toast.success(`Joined "${team.name}"!`);
+      toast.success(`${$t('joined_team')} "${team.name}"!`);
       await loadTeams();
     } catch (e) {
       toast.error(e.message);
@@ -144,23 +144,23 @@
   const features = [
     {
       icon: "⚡",
-      title: "Deep Focus",
-      desc: "Structured 25-minute sessions help you enter flow state and stay there.",
+      title: $t('feat_focus_title'),
+      desc: $t('feat_focus_desc'),
     },
     {
       icon: "📊",
-      title: "Track Progress",
-      desc: "Monitor completed sessions and total focus time across all your work.",
+      title: $t('feature_track_progress'),
+      desc: $t('feature_track_progress_desc'),
     },
     {
       icon: "🎯",
-      title: "Task-Linked",
-      desc: "Attach tasks to sessions. Check them off as you power through your list.",
+      title: $t('feature_task_linked'),
+      desc: $t('feature_task_linked_desc'),
     },
     {
       icon: "🌗",
-      title: "Adaptive Theme",
-      desc: "Dark and light modes that adapt to your environment and preference.",
+      title: $t('feature_adaptive_theme'),
+      desc: $t('feature_adaptive_theme_desc'),
     },
   ];
 
@@ -253,7 +253,7 @@
             <span class="section-label font-mono">{$t("community")}</span>
             <h2 class="preview-title">{$t("leaderboard_title")}</h2>
           </div>
-          <a href="/leaderboard" class="see-all-btn font-mono">See all →</a>
+          <a href="/leaderboard" class="see-all-btn font-mono">{$t('see_all')}</a>
         </div>
 
         <!-- Period tabs -->
@@ -269,8 +269,8 @@
 
         <div class="lb-wrap" class:lb-fetching={lbLoading && leaderboard.length > 0}>
           <div class="lb-col-header font-mono">
-            <span>#</span><span>User</span><span class="tr">Sessions</span><span
-              class="tr">Hours</span
+            <span>{$t('col_rank')}</span><span>{$t('col_user')}</span><span class="tr">{$t('col_sessions')}</span><span
+              class="tr">{$t('col_hours')}</span
             >
           </div>
           {#if lbLoading && leaderboard.length === 0}
@@ -295,7 +295,7 @@
                 </div>
                 <span class="lb-val font-mono tr">{row.sessions}</span>
                 <span class="lb-val font-mono tr"
-                  >{(row.total_seconds / 3600).toFixed(1)}h</span
+                  >{(row.total_seconds / 3600).toFixed(1)}{$t('hour')}</span
                 >
               </div>
             {/each}
@@ -310,7 +310,7 @@
                   >{$timer.completedSessions}</span
                 >
                 <span class="lb-val font-mono tr"
-                  >{($timer.totalFocusTime / 3600).toFixed(1)}h</span
+                  >{($timer.totalFocusTime / 3600).toFixed(1)}{$t('hour')}</span
                 >
               </div>
             {/if}
@@ -323,9 +323,9 @@
         <div class="preview-head">
           <div>
             <span class="section-label font-mono">{$t("teams_label")}</span>
-            <h2 class="preview-title">Top Teams</h2>
+            <h2 class="preview-title">{$t('top_teams')}</h2>
           </div>
-          <a href="/teams" class="see-all-btn font-mono">See all →</a>
+          <a href="/teams" class="see-all-btn font-mono">{$t('see_all')}</a>
         </div>
 
         {#if teamsLoading}
@@ -346,7 +346,7 @@
                     <div class="team-row-name">{team.name}</div>
                     <div class="team-row-meta font-mono">
                       {CATEGORY_ICONS[team.category] || "⚡"}
-                      {team.category} · {team.member_count} members
+                      {team.category} · {team.member_count} {$t('members_count')}
                     </div>
                   </div>
                 </div>
@@ -357,12 +357,12 @@
                     title="Copy invite code">{team.invite_code}</button
                   >
                   {#if isMember}
-                    <span class="member-chip font-mono">Joined</span>
+                    <span class="member-chip font-mono">{$t('joined_label')}</span>
                   {:else if user}
                     <button
                       class="join-chip"
                       style="border-color:{team.color};color:{team.color}"
-                      on:click={() => quickJoin(team)}>Join</button
+                      on:click={() => quickJoin(team)}>{$t('join_label')}</button
                     >
                   {/if}
                 </div>

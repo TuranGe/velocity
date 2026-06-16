@@ -389,7 +389,7 @@
         <div class="daily-chart">
           {#each chartDays as day}
             <div class="chart-col">
-              <div class="chart-bar-wrap" title="{day.label}: {day.sessions} seans, {day.minutes}{$t('minute')}">
+              <div class="chart-bar-wrap" title="{day.label}: {day.sessions} {$t('profile_chart_tooltip_sessions')}, {day.minutes}{$t('minute')}">
                 <div
                   class="chart-bar"
                   class:chart-bar-today={day.isToday}
@@ -439,7 +439,7 @@
                   <span class="session-name">{formatMode(session.mode)}</span>
                   <span class="session-date">{formatDate(session.completed_at)}</span>
                 </div>
-                <span class="session-dur font-mono">{Math.round(session.duration / 60)}m</span>
+                <span class="session-dur font-mono">{Math.round(session.duration / 60)}{$t('minute')}</span>
               </div>
             {/each}
           </div>
@@ -480,7 +480,7 @@
                 <div class="activity-body">
                   <span class="activity-label">{$t('profile_listening')}</span>
                   <span class="activity-title">{spotify.song}</span>
-                  <span class="activity-sub">by {spotify.artist} · {spotify.album}</span>
+                  <span class="activity-sub">{spotify.artist} · {spotify.album}</span>
                 </div>
                 <div class="spotify-bars" aria-hidden="true">
                   <span></span><span></span><span></span>

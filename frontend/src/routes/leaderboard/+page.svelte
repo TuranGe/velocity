@@ -149,15 +149,15 @@
             <UserAvatar user={row} size={30} radius="8px" />
             <a class="lb-name" href={row.id === user?.id ? "/profile" : `/profile/${row.username}`}>{row.username}</a>
             {#if row.id === user?.id}<span class="you-tag font-mono">{$t('you_label')}</span>{/if}
-            {#if row.isMatch}<span class="match-tag font-mono">match</span>{/if}
+            {#if row.isMatch}<span class="match-tag font-mono">👈</span>{/if}
           </div>
           <span class="lb-val font-mono text-right">{row.sessions}</span>
-          <span class="lb-val font-mono text-right">{(row.total_seconds/3600).toFixed(1)}h</span>
+          <span class="lb-val font-mono text-right">{(row.total_seconds/3600).toFixed(1)}{$t('hour')}</span>
         </div>
       {/each}
     {:else if rows.length === 0}
       <div class="lb-empty">
-        {search ? `${$t('no_users_found')} for "${search}"` : 'No data yet'}
+        {search ? `${$t('no_users_found')} for "${search}"` : $t('no_data_yet')}
       </div>
     {:else}
       {#each rows as row, i (row.id)}
@@ -174,7 +174,7 @@
             {#if row.id === user?.id}<span class="you-tag font-mono">{$t('you_label')}</span>{/if}
           </div>
           <span class="lb-val font-mono text-right">{row.sessions}</span>
-          <span class="lb-val font-mono text-right">{(row.total_seconds/3600).toFixed(1)}h</span>
+          <span class="lb-val font-mono text-right">{(row.total_seconds/3600).toFixed(1)}{$t('hour')}</span>
         </div>
       {/each}
 
@@ -188,7 +188,7 @@
             <span class="you-tag font-mono">{$t('you_label')}</span>
           </div>
           <span class="lb-val font-mono text-right">{myStats.sessions}</span>
-          <span class="lb-val font-mono text-right">{(myStats.total_seconds/3600).toFixed(1)}h</span>
+          <span class="lb-val font-mono text-right">{(myStats.total_seconds/3600).toFixed(1)}{$t('hour')}</span>
         </div>
       {/if}
     {/if}
@@ -196,7 +196,7 @@
 
   {#if !user}
     <div class="cta-bar">
-      <p>Join the leaderboard — <a href="/">log in</a> and start focusing!</p>
+      <p>{$t('leaderboard_join_cta')} <a href="/">{$t('leaderboard_join_link')}</a> {$t('leaderboard_join_suffix')}</p>
     </div>
   {/if}
 </div>

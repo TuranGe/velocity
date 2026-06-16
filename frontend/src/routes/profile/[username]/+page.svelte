@@ -21,13 +21,13 @@
     try {
       const res = await fetch(`${API_URL}/api/users/${username}/profile`);
       if (!res.ok) {
-        error = res.status === 404 ? 'Kullanıcı bulunamadı.' : 'Profil yüklenemedi.';
+        error = res.status === 404 ? $t('profile_user_not_found') : $t('profile_load_error');
         return;
       }
       profile = await res.json();
       if (profile.user.discord_id) loadDiscordActivity(profile.user.discord_id);
     } catch {
-      error = 'Profil yüklenemedi.';
+      error = $t('profile_load_error');
     } finally {
       loading = false;
     }
@@ -72,7 +72,7 @@
     <div class="error-state" transition:fly={{ y: 16, duration: 260 }}>
       <span class="error-icon">👻</span>
       <p>{error}</p>
-      <a href="/" class="btn-ghost">Ana sayfaya dön</a>
+      <a href="/" class="btn-ghost">{$t('auth_discord_return_home')}</a>
     </div>
 
   {:else if profile}
@@ -187,7 +187,7 @@
                     <span class="session-name">{formatMode(s.mode)}</span>
                     <span class="session-date">{fmtDate(s.completed_at)}</span>
                   </div>
-                  <span class="session-dur font-mono">{Math.round(s.duration / 60)}m</span>
+                  <span class="session-dur font-mono">{Math.round(s.duration / 60)}{$t('minute')}</span>
                 </div>
               {/each}
             </div>

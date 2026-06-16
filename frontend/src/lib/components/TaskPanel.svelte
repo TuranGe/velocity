@@ -147,7 +147,7 @@
   async function handleAdd() {
     if (!$auth.user) {
       gsap?.to(inputEl, { keyframes: [{ x: -6 }, { x: 6 }, { x: -4 }, { x: 4 }, { x: 0 }], duration: 0.4, ease: 'none' });
-      import('$lib/stores/toast').then(m => m.toast.warn('Görev eklemek için giriş yapman gerekiyor'));
+      import('$lib/stores/toast').then(m => m.toast.warn($t('task_login_required')));
       return;
     }
     if (!newTaskText.trim()) {
@@ -283,7 +283,7 @@
   </header>
 
   {#if totalTasks > 0}
-    <div class="progress-track" title="{doneTasks}/{totalTasks} tamamlandı">
+    <div class="progress-track" title="{doneTasks}/{totalTasks} {$t('completed')}">
       <div class="progress-fill" style="width:{progressPct}%"></div>
       <span class="progress-label font-mono">{doneTasks}/{totalTasks}</span>
     </div>
@@ -293,8 +293,8 @@
     {#if !$auth.user}
       <div class="auth-gate">
         <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><rect x="3" y="11" width="18" height="11" rx="2"/><path d="M7 11V7a5 5 0 0 1 10 0v4"/></svg>
-        <span>Görev eklemek için</span>
-        <a href="/profile" class="auth-gate-link">giriş yap →</a>
+        <span>{$t('task_gate_text')}</span>
+        <a href="/profile" class="auth-gate-link">{$t('task_gate_link')}</a>
       </div>
     {/if}
     <input
@@ -308,7 +308,7 @@
       disabled={!$auth.user}
     />
     <div class="form-row">
-      <div class="duration-picker" title="Görevin kaç dakika süreceğini gir">
+      <div class="duration-picker" title={$t('session_tooltip')}>
         <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><circle cx="12" cy="12" r="10"/><polyline points="12 6 12 12 16 14"/></svg>
         <button class="pomo-btn" on:click={() => newTaskMinutes = Math.max(1, newTaskMinutes - 5)}>−</button>
         <input
@@ -349,11 +349,11 @@
   {#if $tasks.filter(t => !t.done).length > 0}
     <p class="hint-text">
       {#if activeTasks > 0 && $timer.status === 'running'}
-        <span class="hint-active">⏱ {activeTasks} görev izleniyor</span>
+        <span class="hint-active">⏱ {activeTasks} {$t('task_tracking_active')}</span>
       {:else if activeTasks > 0}
-        <span class="hint-active">✓ {activeTasks} görev seçili — timer'ı başlat!</span>
+        <span class="hint-active">✓ {activeTasks} {$t('task_selected_hint')}</span>
       {:else}
-        Yapmak istediğin görevi seç, sonra timer'ı başlat
+        {$t('task_select_hint')}
       {/if}
     </p>
   {/if}
@@ -408,10 +408,10 @@
               class:completed={task.done}
               class:timer-locked={!task.done && ($timer.status === 'running' || $timer.status === 'paused')}
               on:click={(e) => !task.done && handleToggleSelected(task.id, e.currentTarget.closest('.task-item'))}
-              aria-label={task.done ? 'Tamamlandı' : task.selected ? 'Seçimi kaldır' : 'Bunu yapıyorum'}
+              aria-label={task.done ? $t('completed') : task.selected ? $t('remove_selection') : $t('working_on_this')}
               aria-pressed={task.selected}
               disabled={task.done || $timer.status === 'running' || $timer.status === 'paused'}
-              title={task.done ? 'Tamamlandı ✓' : ($timer.status === 'running' || $timer.status === 'paused') ? 'Timer çalışırken değiştiremezsin' : task.selected ? 'Seçimi kaldır' : 'Üzerinde çalışmak için seç'}
+              title={task.done ? $t('completed') : ($timer.status === 'running' || $timer.status === 'paused') ? $t('timer_locked') : task.selected ? $t('remove_selection') : $t('select_task')}
             >
               {#if task.done}
                 <!-- Done: solid checkmark -->
@@ -450,8 +450,8 @@
             <button
               class="task-delete"
               on:click={(e) => handleRemove(task.id, e.currentTarget.closest('.task-item'))}
-              aria-label="Sil"
-              title="Sil"
+              aria-label={$t('delete_task')}
+              title={$t('delete_task')}
             >
               <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round">
                 <line x1="18" y1="6" x2="6" y2="18"/>

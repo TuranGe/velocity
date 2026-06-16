@@ -9,18 +9,19 @@
   import WeeklySummaryModal from '$lib/components/WeeklySummaryModal.svelte';
   import { initGSAP } from '$lib/utils/gsap';
   import { lang } from '$lib/stores/i18n';
+  import { t } from '$lib/stores/i18n';
   import { auth, userStats } from '$lib/stores/api';
 
   let gsap;
   let wipeEl;
   let isWiping = false;
 
-  const tabs = [
-    { href: '/',           icon: '⏱', label: 'Timer' },
-    { href: '/stats',      icon: '📊', label: 'Stats' },
-    { href: '/leaderboard',icon: '🏆', label: 'Board' },
-    { href: '/teams',      icon: '🤝', label: 'Teams' },
-    { href: '/profile',    icon: '👤', label: 'Profile' },
+  $: tabs = [
+    { href: '/',            icon: '⏱', label: $t('timer') },
+    { href: '/stats',       icon: '📊', label: $t('stats') },
+    { href: '/leaderboard', icon: '🏆', label: $t('leaderboard') },
+    { href: '/teams',       icon: '🤝', label: $t('teams') },
+    { href: '/profile',     icon: '👤', label: $t('profile') },
   ];
 
   function doThemeWipe(callback) {

@@ -8,6 +8,7 @@
   import { notifyTimerComplete, notifyLongBreakSuggestion, isNotificationSupported, getPermission, requestNotificationPermission } from '$lib/utils/notifications';
   import { toast } from '$lib/stores/toast';
   import ShortcutsOverlay from './ShortcutsOverlay.svelte';
+  import { t } from '$lib/stores/i18n';
 
   let showShortcuts = false;
 
@@ -126,8 +127,8 @@
     localStorage.setItem(NOTIF_PROMPT_KEY, '1');
 
     toast.withAction(
-      '🔔 Sekme arka plandayken bildirim almak ister misin?',
-      { label: 'Aç', onClick: () => requestNotificationPermission() },
+      $t('timer_notif_prompt'),
+      { label: $t('timer_notif_enable'), onClick: () => requestNotificationPermission() },
       'info'
     );
   }
@@ -135,7 +136,7 @@
   // After 4 completed focus sessions, suggest a long break.
   $: if ($timer.suggestLongBreak) {
     timer.clearLongBreakSuggestion();
-    toast.info('🎉 4 focus oturumu tamamladın! Uzun bir ara zamanı.', 6000);
+    toast.info($t('timer_long_break_suggestion'), 6000);
     notifyLongBreakSuggestion();
   }
 
@@ -227,7 +228,7 @@
         class:active={$timer.mode === mode.id}
         disabled={$timer.status === 'running'}
         on:click={() => handleModeChange(mode.id)}
-        title={$timer.status === 'running' ? 'Modu değiştirmek için önce timer\'ı durdur' : `Shortcut: ${mode.shortcut}`}
+        title={$timer.status === 'running' ? $t('timer_mode_running_hint') : `${$t('timer_shortcut_hint')}: ${mode.shortcut}`}
       >
         {mode.label}
         <span class="mode-shortcut">{mode.shortcut}</span>
@@ -235,7 +236,7 @@
     {/each}
   </div>
   <p class="sr-only" aria-live="polite">
-    {$timer.status === 'running' ? 'Timer çalışıyor, mod değiştirmek için önce durdurun veya sıfırlayın.' : ''}
+    {$timer.status === 'running' ? $t('timer_status_running') : ''}
   </p>
 
   {#if showCustomInput}
@@ -246,12 +247,12 @@
         bind:value={customMinutes}
         min="1"
         max="180"
-        placeholder="Dakika"
+        placeholder={$t('minutes_placeholder')}
         on:keydown={e => e.key === 'Enter' && applyCustomDuration()}
         autofocus
       />
-      <span class="custom-unit">dk</span>
-      <button class="custom-apply" on:click={applyCustomDuration}>Başlat</button>
+      <span class="custom-unit">{$t('minute')}</span>
+      <button class="custom-apply" on:click={applyCustomDuration}>{$t('start')}</button>
       <button class="custom-cancel" on:click={() => showCustomInput = false}>✕</button>
     </div>
   {/if}
@@ -343,20 +344,20 @@
   <div class="timer-stats">
     <div class="stat-item">
       <span class="stat-value font-mono">{$auth.user ? $userStats.totalSessions : $timer.completedSessions}</span>
-      <span class="stat-label">Sessions</span>
+      <span class="stat-label">{$t('session')}</span>
     </div>
     <div class="stat-divider"></div>
     <div class="stat-item">
       <span class="stat-value font-mono">{$auth.user ? $userStats.totalMinutes : Math.floor($timer.totalFocusTime / 60)}</span>
-      <span class="stat-label">Minutes focused</span>
+      <span class="stat-label">{$t('timer_minutes_focused')}</span>
     </div>
   </div>
 
-  <button class="keyboard-hint" on:click={() => showShortcuts = true} title="Tüm kısayolları gör">
-    <kbd>Space</kbd> start/pause &nbsp;·&nbsp;
-    <kbd>R</kbd> reset &nbsp;·&nbsp;
-    <kbd>F</kbd> / <kbd>S</kbd> / <kbd>L</kbd> modes &nbsp;·&nbsp;
-    <kbd>?</kbd> tüm kısayollar
+  <button class="keyboard-hint" on:click={() => showShortcuts = true} title={$t('timer_see_shortcuts')}>
+    <kbd>Space</kbd> {$t('timer_start_pause')} &nbsp;·&nbsp;
+    <kbd>R</kbd> {$t('timer_reset')} &nbsp;·&nbsp;
+    <kbd>F</kbd> / <kbd>S</kbd> / <kbd>L</kbd> {$t('timer_modes')} &nbsp;·&nbsp;
+    <kbd>?</kbd> {$t('timer_all_shortcuts')}
   </button>
 </section>
 
