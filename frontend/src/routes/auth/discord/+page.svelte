@@ -13,7 +13,7 @@
       const mode = $page.url.searchParams.get('state');
 
       if (!code) {
-        error = No authorization code received;
+        error = "No authorization code received";
         loading = false;
         return;
       }
@@ -33,15 +33,15 @@
 
       if (mode === 'link' && $auth.user) {
         await auth.linkProvider('discord', data.provider_id, data.provider_id);
-        toast.success(Discord account linked! 🎉);
+        toast.success("Discord account linked! 🎉");
         goto('/profile');
       } else {
         await auth.oauth('discord', data.provider_id, data.email, data.username, data.profile_image);
-        toast.success(`${Welcome}, ${data.username}! 🎉`);
+        toast.success(`Welcome, ${data.username}! 🎉`);
         goto('/');
       }
     } catch (e) {
-      error = e.message || Discord authentication failed;
+      error = e.message || "Discord authentication failed"  ;
       loading = false;
     }
   });
@@ -51,7 +51,7 @@
   {#if loading}
     <div class="loading">
       <div class="spinner"></div>
-      <span>{Connecting...}</span>
+      <span>Connecting...</span>
     </div>
   {:else if error}
     <div class="error-card">
